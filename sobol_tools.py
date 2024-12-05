@@ -8,10 +8,13 @@ from scipy.stats.qmc import Sobol
 
 #------------------------------------------------------------------------------
 
-def sobolSampleGen():
+def sobolSampleGen(ndim, N):
     """
-    Generate Sobol
-    
-    
-    
+    Generate Sobol sequence samples
     """
+
+
+
+
+
+
