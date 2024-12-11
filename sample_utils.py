@@ -9,7 +9,7 @@ dist_map = {
     "normal": norm,
     "uniform": uniform,
     "beta": beta,
-    "lognormal"; lognorm
+    "lognormal": lognorm
 }
 
 #------------------------------------------------------------------------------
@@ -53,6 +53,11 @@ class SampleData():
         # if precomp is a numpy array
         if isinstance(precomp, np.ndarray):
             self.addDataArray(precomp)
+
+        if isinstance(scales, dict):
+            assert categories == list(scales.keys())
+            self.scales = scales
+            
 
         # possible references to either inputs that generated this data, or outputs generated from this data
         self.input_ref = None
@@ -270,24 +275,23 @@ def _sobolABGen(i, SD_A, SD_B, cat):
 def uniformToDist(data, scales, inds):
 
     assert list(scales.keys()) == list(inds.keys())
-
     data_s = np.zeros_like(data)
 
     # iterate over indices
-    for key, ind, in inds:
+    for key, ind, in inds.items():
         scale_info = scales[key]
 
         if isinstance(scale_info["loc"], list):
             for i in range(len(ind)):
 
-                data_s[ind[i], :] = transformDist(data_s[ind[i], :], 
+                data_s[ind[i], :] = transformDist(data[ind[i], :], 
                                 scale_info['dist'][i], scale_info['loc'][i], scale_info['scale'][i])
 
         else: # apply same dist to all variables in category
 
             for i in range(len(ind)):
 
-                data_s[ind[i], :] = transformDist(data_s[ind[i], :], 
+                data_s[ind[i], :] = transformDist(data[ind[i], :], 
                                 scale_info['dist'], scale_info['loc'], scale_info['scale'])
                 
     return data_s
@@ -301,5 +305,5 @@ def transformDist(x, dist, loc, scale, a=None, b=None):
         x_s = dist_map[dist].ppf(x, loc=loc, scale=scale, a=a, b=b)
     else:
         x_s = dist_map[dist].ppf(x, loc=loc, scale=scale)
-
+    
     return x_s
