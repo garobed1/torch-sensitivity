@@ -74,7 +74,7 @@ class SampleData():
         if cat is None:    
             sample = {}
 
-            for key, item in self.data:
+            for key in self.data.keys():
                 sample[key] = self.data[key][:, i]
 
             return sample
@@ -191,7 +191,7 @@ class SampleData():
 
 #------------------------------------------------------------------------------
 
-    def genSobolData(self):
+    def genSobolData(self, SD_B_pre=None):
         """
         Given the current sample data as A, generate 
         """
@@ -202,7 +202,11 @@ class SampleData():
         SD_A = self
 
         # independent sample for B
-        SD_B = SampleData(cats, sizes, precomp=sobolSampleGen(self.getNDim(), self.getNSamples()).T)
+        if SD_B_pre is None:
+            SD_B = SampleData(cats, sizes, precomp=sobolSampleGen(self.getNDim(), self.getNSamples()).T)
+        else:
+            SD_B = SD_B_pre
+
         # now produce SD_AB as a lambda function with __call__ similar to SampleData
         SD_AB = lambda x, cat=None : _sobolABGen(x, SD_A, SD_B, cat)
         # SD_AB = ABSamples(SD_A, SD_B)
@@ -243,8 +247,12 @@ def _sobolABGen(i, SD_A, SD_B, cat):
     N = SD_A.getNSamples()
 
     # grabbing B based on standard AB order
-    A_ind = [j % N for j in list(i)]
-    B_ind = [j // N for j in list(i)]
+    if isinstance(i, int):
+        A_ind = [i % N]
+        B_ind = [i // N]
+    else:
+        A_ind = [j % N for j in list(i)]
+        B_ind = [j // N for j in list(i)]
 
     #return sample i, which may be a list
         
