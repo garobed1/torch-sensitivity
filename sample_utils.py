@@ -112,7 +112,7 @@ class SampleData():
 
     def addData(self, add):
         # essentially just copying a dict over and appending it
-        assert add is isinstance(dict)
+        assert isinstance(add, dict)
 
         # NOTE: it is possible to not include samples from certain categories at the moment
         # assert all categories have same number of samples

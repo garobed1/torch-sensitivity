@@ -3,8 +3,10 @@ from scipy.stats.qmc import Sobol
 import numpy as np
 
 
-
-
+"""
+Tools for generating Sobol samples and computing variance-based sensitivity
+analysis via Sobol indices
+"""
 
 #------------------------------------------------------------------------------
 
@@ -35,8 +37,6 @@ def computeSobolIndices(O_A, O_B, O_AB, ndim, cat):
     f_AB = np.copy(O_AB.data[cat])
     f_AB_n = np.reshape(f_AB, [ndim, odim, N_A])
 
-    #TODO FIX: arrays are modified in place by sobol_indices, they are centered
-    # also, results are inconsistent
     func = {'f_A': f_A, 'f_B': f_B, 'f_AB': f_AB_n}
     res = sobol_indices(func=func, n=N_A)
 
