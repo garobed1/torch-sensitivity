@@ -55,7 +55,7 @@ state:
   atmospheric_pressure: 101325.0    # Pa
   average_cv: 1.5                   # in unit of R
   elements: [Ar, E]
-  species: [Ar, Ar+, Ar*, E]
+  species: [Ar, Ar+, E]
   base_species: [Ar, Ar+, E]
   background_species: Ar
   initial_condition: test/torch6/AxialICPTorch.ic6.5s.h5
@@ -78,38 +78,38 @@ species:
   - name: Ar+
     composition: {Ar: 1, E: -1}
     formation_energy: 1.521e6   # J/mol
-  - name: Ar*
-    composition: {Ar: 1}
-    formation_energy: 1.114e6
+  # - name: Ar*
+  #   composition: {Ar: 1}
+  #   formation_energy: 1.114e6
   - name: E
     composition: {E: 1}
     formation_energy: 0.0
 
 reactions:
-  - equation: Ar + E => Ar+ + E + E  # Reaction 1
-    rate_type: table
-    table:
-      # filename: test/reactions/ionization.5000K.txt
-      filename: test/reactions/ionization.3000K.ion1e-4.h5
-      x_logscale: true
-      y_logscale: true
-      interpolation: true
-  - equation: Ar + E => Ar* + E  # Reaction 2
-    rate_type: table
-    table:
-      # filename: test/reactions/excitation.5000K.txt
-      filename: test/reactions/excitation.3000K.ion1e-4.h5
-      x_logscale: true
-      y_logscale: true
-      interpolation: true
-  - equation: Ar* + E => Ar+ + E + E  # Reaction 3
-    rate_type: table
-    table:
-      # filename: test/reactions/step-ionization.5000K.txt
-      filename: test/reactions/step-ionization.3000K.ion1e-4.h5
-      x_logscale: true
-      y_logscale: true
-      interpolation: true
+  # - equation: Ar + E => Ar+ + E + E  # Reaction 1
+  #   rate_type: table
+  #   table:
+  #     # filename: test/reactions/ionization.5000K.txt
+  #     filename: test/reactions/ionization.3000K.ion1e-4.h5
+  #     x_logscale: true
+  #     y_logscale: true
+  #     interpolation: true
+  # - equation: Ar + E => Ar* + E  # Reaction 2
+  #   rate_type: table
+  #   table:
+  #     # filename: test/reactions/excitation.5000K.txt
+  #     filename: test/reactions/excitation.3000K.ion1e-4.h5
+  #     x_logscale: true
+  #     y_logscale: true
+  #     interpolation: true
+  # - equation: Ar* + E => Ar+ + E + E  # Reaction 3
+  #   rate_type: table
+  #   table:
+  #     # filename: test/reactions/step-ionization.5000K.txt
+  #     filename: test/reactions/step-ionization.3000K.ion1e-4.h5
+  #     x_logscale: true
+  #     y_logscale: true
+  #     interpolation: true
 
 collision_integrals:
   - pair: coulomb-repulsive
