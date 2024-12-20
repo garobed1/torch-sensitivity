@@ -315,3 +315,27 @@ def transformDist(x, dist, loc, scale, a=None, b=None):
         x_s = dist_map[dist].ppf(x, loc=loc, scale=scale)
     
     return x_s
+    
+
+
+"""
+From parallel OpenMDAO beam problem example
+
+Divide up samples among available procs.
+"""
+def divide_cases(ncases, nprocs):
+
+    data = []
+    for j in range(nprocs):
+        data.append([])
+
+    wrap = 0
+    for j in range(ncases):
+        idx = j - wrap
+        if idx >= nprocs:
+            idx = 0
+            wrap = j
+
+        data[idx].append(j)
+
+    return data

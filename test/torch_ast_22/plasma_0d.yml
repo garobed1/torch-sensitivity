@@ -1,0 +1,113 @@
+prefix: Plasma0D
+
+timer: false
+
+verbose: false
+
+grid:
+  periodic: true
+  discretization: SBP1-2
+  # If mesh_file is not specified, read size and domain_length.
+  size: 3
+  domain_length: 1.0
+
+output:
+  directory: plasma_0d_output2
+  frequency: 10
+
+time_integration:
+  type: implicit-explicit-euler
+  # type: steady-state-solver
+  number_of_timesteps: 1000
+  timestep_size: 1.0e-2
+  implicit_solver:
+    threshold: 1.0e-14
+    # linear_solver: gmres
+    # schur_complement: true
+
+system:
+  type: plasma-0d
+  # heat-source:
+  #   enabled: true
+  #   amplitude: 2500000.0
+  #   frequency: 0.0
+  #   location: 0.145
+  #   scale: 0.1
+
+state:
+  type: plasma-0d
+  atmospheric_pressure: 101325.0    # Pa
+  temperature: 5500.0               # K
+  average_cv: 1.5                   # in unit of R
+  elements: [Ar, E]
+  # species: [Ar, Ar+, Ar*, E]
+  species: [Ar, Ar+, E]
+  base_species: [Ar, Ar+, E]
+  background_species: Ar
+  initial_condition: test/torch_ast_22/Plasma0D.ic3.h5
+  # initial_condition: plasma_0d_output2/Plasma0D-00000500.h5
+
+elements:
+  - name: Ar
+    mass: 39.948e-3 # kg/mol
+  - name: E
+    mass: 5.4858e-7
+
+species:
+  - name: Ar
+    composition: {Ar: 1}
+    formation_energy: 0.0
+  - name: Ar+
+    composition: {Ar: 1, E: -1}
+    formation_energy: 1.521e6   # J/mol
+  # - name: Ar*
+  #   composition: {Ar: 1}
+  #   formation_energy: 1.114e6
+  - name: E
+    composition: {E: 1}
+    formation_energy: 0.0
+
+reactions:
+  - equation: Ar + E <=> Ar+ + E + E  # Reaction 1
+    rate_type: arrhenius
+    arrhenius:    # output unit (m3/mol)^n/s, temperature unit in K
+      coefficients: [7.4373e10, 0.0, 2.16853e5]
+    detailed_balance:
+      rate_type: arrhenius
+      arrhenius:
+        coefficients: [4.8116e-2, 1.5, 1.8288e5]
+
+# collision_integrals:
+#   - pair: coulomb-repulsive
+#     order: [1, 1]
+#     type: table
+#     table:
+#       filename: test/collision_integral/Coulomb11_rep.h5
+#       x_logscale: true
+#       y_logscale: true
+#       interpolation: true
+#   - pair: coulomb-attractive
+#     order: [1, 1]
+#     type: table
+#     table:
+#       filename: test/collision_integral/Coulomb11_att.h5
+#       x_logscale: true
+#       y_logscale: true
+#       interpolation: true
+#   - pair: [Ar, E]
+#     order: [1, 1]
+#     type: table
+#     table:
+#       filename: test/collision_integral/Ar_E_11.h5
+#       x_logscale: true
+#       y_logscale: true
+#       interpolation: true
+
+parameter_explore_input:
+  output_directory: torch1d_ast_22/plasma0d
+parameter_explore:
+  - variable: [state, temperature]
+    min: 300.0
+    max: 12000.0
+    log_scale: false
+    sample_size: 200

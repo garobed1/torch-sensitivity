@@ -1,0 +1,437 @@
+prefix: AxialICPTorch
+
+timer: false
+
+verbose: true
+
+grid:
+  periodic: false
+  mesh_file: trevilo-cases/torch_tst_2023/Torch.mesh.h5
+  #discretization: SBP2-4
+  discretization: SBP1-2
+  size: 2048
+  domain_length: 1.0
+
+output:
+  directory: trevilo-cases/torch_7sp_chem/nominal/output
+  frequency: 100
+
+time_integration:
+  # type: im-ex-RK222
+  type: implicit-explicit-euler
+  #  number_of_timesteps: 5000
+  #  timestep_size: 1.0e-5
+  number_of_timesteps: 1000
+  timestep_size: 1.0e-4
+  implicit_solver:
+    threshold: 1.0e-8
+    # linear_solver: gmres
+    # schur_complement: true
+
+system:
+  type: axial-torch
+  quantity-of-interest: exit-Xion
+  implicit-terms:
+    inviscid-flux: true
+    inviscid-source: true
+    divergence: true
+    hydro-pressure: true
+    sat-boundary: true
+  heat-source:
+    enabled: true
+    power: 20.0e+3
+    # power: 16.0e+3
+    frequency: 0.0
+    location: 0.15
+    scale: 0.02
+    #scale: 0.01
+    enable_time_ramp: true
+    duration: 0.02       # s
+  wall-contribution:
+    enabled: true
+    model: coefficient
+    coefficient: 6.0      # W/m2/K
+    wall_temperature: 300.0
+  artificial-dissipation:
+    #enabled: false
+    enabled: true
+    amplitude: 1.0e-2
+  net-emission:
+    enabled: true
+    coefficient: table
+    # path_length: 1.0e-1      # m
+    #path_length: 3.96674975e-2
+    path_length: 0.01
+    table:
+      filename: test/nec/MenartMalik2002.nec.h5
+      # dataset: 1e+2cm
+      x_logscale: false
+      y_logscale: true
+      interpolation: true
+      arrhenius-extend: true
+
+#parameter_explore_input:
+#  output_directory: torch1d_ast_22
+#  test_sample: false
+#  test_indexes: [435]
+#parameter_explore:
+#  - variable: [system, heat-source, power]
+#    list: [25.84848226e+3, 28.22131567e+3, 30.20430473e+3]
+#  - variable: [system, net-emission, path_length]
+#    list: [1.48805966e-2, 3.96674975e-2, 7.4473299e-2]
+
+state:
+  type: monatomic-noneq-plasma2
+  atmospheric_pressure: 101325.0    # Pa
+  average_cv: 1.5                   # in unit of R
+  elements: [Ar, E]
+  species: [Ar, Ar+, Arm, Arr, Arp, Arh, E]
+  base_species: [Ar, Ar+, E]
+  background_species: Ar
+  initial_condition: trevilo-cases/torch_7sp_chem/nominal/output/AxialICPTorch-00013000.h5
+  # initial_condition: trevilo-cases/torch_7sp_chem/nominal/output/AxialICPTorch-00012000.h5
+  # initial_condition: trevilo-cases/torch_7sp_chem/nominal/output/AxialICPTorch-00011000.h5
+  # initial_condition: trevilo-cases/torch_7sp_chem/nominal/output/AxialICPTorch-00010000.h5
+  # initial_condition: trevilo-cases/torch_7sp_chem/nominal/output/AxialICPTorch-00005000.h5
+  # initial_condition: trevilo-cases/torch_7sp_chem/nominal/AxialICPTorch.ic.h5
+
+boundary:
+  location: left
+  type: inflow
+  generate_new_condition: true
+  profile: trevilo-cases/torch_7sp_chem/nominal/AxialICPTorch.inflow.txt
+  sat_strength: 10.0
+
+torch_config:
+  flow-rate: 40.0  #SLPM
+  species_mole_fraction: 1.0e-7
+
+elements:
+  - name: Ar
+    mass: 39.948e-3 # kg/mol
+  - name: E
+    mass: 5.4858e-7
+
+species:
+  - name: Ar
+    composition: {Ar: 1}
+    formation_energy: 0.0
+  - name: Ar+
+    composition: {Ar: 1, E: -1}
+    formation_energy: 1.521e6   # J/mol
+  - name: Arm
+    composition: {Ar: 1}
+    formation_energy: 1116419.84847284
+  - name: Arr
+    composition: {Ar: 1}
+    formation_energy: 1129622.58232383
+  - name: Arp
+    composition: {Ar: 1}
+    formation_energy: 1267887.18783722
+  - name: Arh
+    composition: {Ar: 1}
+    formation_energy: 1393459.40561185
+  - name: E
+    composition: {E: 1}
+    formation_energy: 0.0
+
+reactions:
+  # Rxn 1: IONIZATION (from ground state) ###########################
+  - equation: Ar + E => Ar+ + E + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Ionization_Ground.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 2: 3 body recombination to ground  ##########################
+  - equation: Ar+ + E + E => Ar + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Recombination_Ground.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 3: ionization from metastable  ##########################
+  - equation: Arm + E => Ar+ + E + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Ionization_meta.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 4: 3 body recombination to metastable  ##########################
+  - equation: Ar+ + E + E => Arm + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Recombination_meta.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 5: excitation from ground to metastable  ##########################
+  - equation: Ar + E => Arm + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Excitation_meta.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 6: de-excitation from metastable  ##########################
+  - equation: Arm + E => Ar + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Deexcitation_meta.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 7: Ionization from resonance ##########################
+  - equation: Arr + E => Ar+ + E + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Ionization_res.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 8: 3 body recombination to resonance ##########################
+  - equation: Ar+ + E + E => Arr + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Recombination_res.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 9: Excitation to resonance ##########################
+  - equation: Ar + E => Arr + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Excitation_res.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 10: de-excitation from resonance ##########################
+  - equation: Arr + E => Ar + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Deexcitation_res.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 11: Ionization from 4p ##########################
+  - equation: Arp + E => Ar+ + E + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Ionization_fourp.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 12: 3 body recombination to 4p  ##########################
+  - equation: Ar+ + E + E => Arp + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Recombination_fourp.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 13: Excitation to 4p ##########################
+  - equation: Ar + E => Arp + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Excitation_fourp.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 14: De-excitation from 4p ##########################
+  - equation: Arp + E => Ar + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Deexcitation_fourp.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 15: Ionization from higher lying ##########################
+  - equation: Arh + E => Ar+ + E + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Ionization_higher.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 16: 3 body recombination to 4p  ##########################
+  - equation: Ar+ + E + E => Arh + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Recombination_higher.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 17: Excitation to higher ##########################
+  - equation: Ar + E => Arh + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Excitation_higher.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 18: De-excitation from 4p ##########################
+  - equation: Arh + E => Ar + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Deexcitation_higher.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 19: Stepwise excitation m to r ##########################
+  - equation: Arm + E => Arr + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_meta_res.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 20: Stepwise excitation r to m ##########################
+  - equation: Arr + E => Arm + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_res_meta.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 21: Stepwise excitation m to p ##########################
+  - equation: Arm + E => Arp + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_meta_fourp.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 22: Stepwise excitation p to m ##########################
+  - equation: Arp + E => Arm + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_fourp_meta.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 23: Stepwise excitation m to h ##########################
+  - equation: Arm + E => Arh + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_meta_higher.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 24: Stepwise excitation h to m ##########################
+  - equation: Arh + E => Arm + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_higher_meta.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 25: Stepwise excitation r to p ##########################
+  - equation: Arr + E => Arp + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_res_fourp.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 26: Stepwise excitation p to r ##########################
+  - equation: Arp + E => Arr + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_fourp_res.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 27: Stepwise excitation r to h ##########################
+  - equation: Arr + E => Arh + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_res_higher.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 28: Stepwise excitation h to r ##########################
+  - equation: Arh + E => Arr + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_higher_res.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 29: Stepwise excitation p to h ##########################
+  - equation: Arp + E => Arh + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_fourp_higher.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 30: Stepwise excitation h to p ##########################
+  - equation: Arh + E => Arp + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_higher_fourp.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+
+# collisions
+collision_integrals:
+  - pair: coulomb-repulsive
+    order: [1, 1]
+    type: table
+    table:
+      filename: test/collision_integral/Coulomb11_rep.h5
+      x_logscale: true
+      y_logscale: true
+      interpolation: true
+  - pair: coulomb-attractive
+    order: [1, 1]
+    type: table
+    table:
+      filename: test/collision_integral/Coulomb11_att.h5
+      x_logscale: true
+      y_logscale: true
+      interpolation: true
+  - pair: [Ar, E]
+    order: [1, 1]
+    type: table
+    table:
+      filename: test/collision_integral/Ar_E_11.h5
+      x_logscale: true
+      y_logscale: true
+      interpolation: true
+  - pair: [Ar, Ar+]
+    order: [1, 1]
+    type: table
+    table:
+      filename: test/collision_integral/Devoto.argon.IA.h5
+      dataset: Qia
+      x_logscale: true
+      y_logscale: true
+      interpolation: true
+  - pair: [Ar, Ar]
+    order: [1, 1]
+    type: table
+    table:
+      filename: test/collision_integral/Amdur_Mason.AA11.h5
+      dataset: dataset
+      x_logscale: true
+      y_logscale: true
+      interpolation: true
+  - pair: [Ar, Ar]
+    order: [2, 2]
+    type: arrhenius
+    arrhenius:
+      coefficients: [1.7e-18, -0.25, 0.0]
+  - pair: coulomb-repulsive
+    order: [2, 2]
+    type: table
+    table:
+      filename: test/collision_integral/MasonMunnSmith1967.h5
+      dataset: O(2,2)-repulsive
+      x_logscale: true
+      y_logscale: true
+      interpolation: true

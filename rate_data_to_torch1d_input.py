@@ -11,17 +11,18 @@ samples in .h5 format
 
 title = "torch1d-propagation-dev"
 
-template_file = "torch1d_argon_sample_config_template.yml"
+# template_file = "torch1d_argon_sample_config_template.yml"
+template_file = "trevilo-cases/torch_7sp_chem/nominal/axial_icp_torch.yml"
 sample_dir = "../torch-chemistry/argon/results/sevenSpecies"
 output_dir = f"results/{title}"
 
 #TODO: fix this, find the formation energies of each
 formation_energy = {'Ar*': 1.114e6, # full lumped excited
                     'Ar+': 1.521e6, # ionized
-                    'Arm': 1.114e6, # metastable 4s
-                    'Arr': 1.114e6, # resonant 4s
-                    'Ar4p': 1.114e6, # 4p
-                    'Ar**': 1.114e6 # higher
+                    'Arm': 1116419.84847284, # metastable 4s
+                    'Arr': 1129622.58232383, # resonant 4s
+                    'Arp': 1267887.18783722, # 4p
+                    'Arh': 1393459.40561185 # higher
 }
 
 name_to_species = {'meta':'Arm',
@@ -156,13 +157,15 @@ for sample in samples:
             if item['equation'] == reaction_name:
                 item['table']['filename'] = rate_dir + '/' + rate
 
+    # set output file
+    template['output']['directory'] = output_dir + '/' + sample + '/output'
+
     
     # write to file
     write_name = output_dir + '/' + sample + '/torch1d_input.yml'
     with open(write_name, 'w') as f:
         yaml.safe_dump(template, f)
 
-    breakpoint()
     
 
 # TODO: Get the test case from Todd and reset the template to pull from that data, meshes, etc.

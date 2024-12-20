@@ -1,0 +1,9 @@
+grid:
+  periodic: false
+  # mesh_file: example_mesh.txt
+  #radial_profile: example_profile.txt
+  #radius_gradient_profile: example_grad_profile.txt
+  discretization: SBP1-2
+  # If mesh_file is not specified, read size and domain_length.
+  size: 128
+  domain_length: 5.0

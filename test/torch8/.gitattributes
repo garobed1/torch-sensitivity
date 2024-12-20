@@ -1,0 +1,4 @@
+AxialICPTorch.inflow8.txt filter=lfs diff=lfs merge=lfs -text
+AxialICPTorch.ic8.h5 filter=lfs diff=lfs merge=lfs -text
+AxialICPTorch-00001000.ref.h5 filter=lfs diff=lfs merge=lfs -text
+Torch.mesh.h5 filter=lfs diff=lfs merge=lfs -text

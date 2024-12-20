@@ -1,0 +1,155 @@
+prefix: AxialICPTorch
+
+timer: false
+
+verbose: true
+
+grid:
+  periodic: false
+  mesh_file: test/torch_ast_22/Torch.mesh.h5
+  # radial_profile: test/torch6/Torch.radius.txt
+  # radius_gradient_profile: example_grad_profile.txt
+  discretization: SBP2-4
+  # If mesh_file is not specified, read size and domain_length.
+  size: 2048
+  domain_length: 1.0
+
+output:
+  directory: test/torch_ast_22/output
+  # directory: test/torch_ast_22/noneq-output
+  frequency: 10
+
+time_integration:
+  # type: im-ex-RK222
+  type: implicit-explicit-euler
+  number_of_timesteps: 1500
+  timestep_size: 1.0e-3
+  implicit_solver:
+    threshold: 1.0e-7
+    # linear_solver: gmres
+    # schur_complement: true
+
+system:
+  type: axial-torch
+  quantity-of-interest: outlet-Te
+  implicit-terms:
+    inviscid-flux: true
+    inviscid-source: true
+    divergence: true
+    hydro-pressure: true
+    sat-boundary: true
+  heat-source:
+    enabled: true
+    # power: 33.5e+3       # W
+    power: 28.22131567e+3
+    frequency: 0.0
+    location: 0.145
+    scale: 0.025
+    enable_time_ramp: true
+    duration: 0.45       # s
+  wall-contribution:
+    enabled: true
+    model: coefficient
+    # power_loss: 23000.0  # W
+    coefficient: 10.0      # W/m2/K
+    wall_temperature: 300.0
+  artificial-dissipation:
+    enabled: false
+    amplitude: 1.0e-2
+  net-emission:
+    enabled: true
+    coefficient: table
+    # path_length: 1.0e-1      # m
+    path_length: 3.96674975e-2
+    table:
+      filename: test/nec/MenartMalik2002.nec.h5
+      # dataset: 1e+2cm
+      x_logscale: false
+      y_logscale: true
+      interpolation: true
+      arrhenius-extend: true
+
+parameter_explore_input:
+  output_directory: torch1d_ast_22
+  test_sample: false
+  test_indexes: [435]
+parameter_explore:
+  - variable: [system, heat-source, power]
+    list: [25.84848226e+3, 28.22131567e+3, 30.20430473e+3]
+  - variable: [system, net-emission, path_length]
+    list: [1.48805966e-2, 3.96674975e-2, 7.4473299e-2]
+
+state:
+  type: monatomic-eq-plasma
+  # type: monatomic-noneq-plasma2
+  atmospheric_pressure: 101325.0    # Pa
+  average_cv: 1.5                   # in unit of R
+  elements: [Ar, E]
+  # species: [Ar, Ar+, Ar*, E]
+  species: [Ar, Ar+, E]
+  base_species: [Ar, Ar+, E]
+  background_species: Ar
+  initial_condition: test/torch_ast_22/AxialICPEqTorch.ic.h5
+  # initial_condition: test/torch_ast_22/AxialICPTorch.ic.h5
+
+boundary:
+  location: left
+  type: inflow
+  profile: test/torch_ast_22/AxialICPEqTorch.inflow.txt
+  # profile: test/torch_ast_22/AxialICPTorch.inflow.txt
+
+elements:
+  - name: Ar
+    mass: 39.948e-3 # kg/mol
+  - name: E
+    mass: 5.4858e-7
+
+species:
+  - name: Ar
+    composition: {Ar: 1}
+    formation_energy: 0.0
+  - name: Ar+
+    composition: {Ar: 1, E: -1}
+    formation_energy: 1.521e6   # J/mol
+  # - name: Ar*
+  #   composition: {Ar: 1}
+  #   formation_energy: 1.114e6
+  - name: E
+    composition: {E: 1}
+    formation_energy: 0.0
+
+reactions:
+  - equation: Ar + E <=> Ar+ + E + E  # Reaction 1
+    rate_type: arrhenius
+    arrhenius:    # output unit (m3/mol)^n/s, temperature unit in K
+      coefficients: [7.4373e10, 0.0, 2.16853e5]
+    detailed_balance:
+      rate_type: arrhenius
+      arrhenius:
+        coefficients: [4.8116e-2, 1.5, 1.8288e5]
+
+collision_integrals:
+  - pair: coulomb-repulsive
+    order: [1, 1]
+    type: table
+    table:
+      filename: test/collision_integral/Coulomb11_rep.h5
+      x_logscale: true
+      y_logscale: true
+      interpolation: true
+  - pair: coulomb-attractive
+    order: [1, 1]
+    type: table
+    table:
+      filename: test/collision_integral/Coulomb11_att.h5
+      x_logscale: true
+      y_logscale: true
+      interpolation: true
+  - pair: [Ar, E]
+    order: [1, 1]
+    type: table
+    table:
+      filename: test/collision_integral/Ar_E_11.h5
+      x_logscale: true
+      y_logscale: true
+      interpolation: true

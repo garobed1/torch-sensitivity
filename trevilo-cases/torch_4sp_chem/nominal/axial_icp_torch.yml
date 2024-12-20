@@ -1,0 +1,232 @@
+prefix: AxialICPTorch
+
+timer: false
+
+verbose: true
+
+grid:
+  periodic: false
+  mesh_file: trevilo-cases/torch_tst_2023/Torch.mesh.h5
+  #discretization: SBP2-4
+  discretization: SBP1-2
+  size: 2048
+  domain_length: 1.0
+
+output:
+  directory: trevilo-cases/torch_4sp2_chem/nominal/output
+  frequency: 1000
+
+time_integration:
+  # type: im-ex-RK222
+  type: implicit-explicit-euler
+  number_of_timesteps: 5000
+  #  timestep_size: 1.0e-5
+  timestep_size: 1.0e-4
+  implicit_solver:
+    threshold: 1.0e-8
+    # linear_solver: gmres
+    # schur_complement: true
+
+system:
+  type: axial-torch
+  quantity-of-interest: exit-Xion
+  implicit-terms:
+    inviscid-flux: true
+    inviscid-source: true
+    divergence: true
+    hydro-pressure: true
+    sat-boundary: true
+  heat-source:
+    enabled: true
+    power: 20.0e+3
+    # power: 16.0e+3
+    frequency: 0.0
+    location: 0.15
+    scale: 0.02
+    #scale: 0.01
+    enable_time_ramp: true
+    duration: 0.02       # s
+  wall-contribution:
+    enabled: true
+    model: coefficient
+    coefficient: 6.0      # W/m2/K
+    wall_temperature: 300.0
+  artificial-dissipation:
+    #enabled: false
+    enabled: true
+    amplitude: 1.0e-2
+  net-emission:
+    enabled: true
+    coefficient: table
+    # path_length: 1.0e-1      # m
+    #path_length: 3.96674975e-2
+    path_length: 0.01
+    table:
+      filename: test/nec/MenartMalik2002.nec.h5
+      # dataset: 1e+2cm
+      x_logscale: false
+      y_logscale: true
+      interpolation: true
+      arrhenius-extend: true
+
+#parameter_explore_input:
+#  output_directory: torch1d_ast_22
+#  test_sample: false
+#  test_indexes: [435]
+#parameter_explore:
+#  - variable: [system, heat-source, power]
+#    list: [25.84848226e+3, 28.22131567e+3, 30.20430473e+3]
+#  - variable: [system, net-emission, path_length]
+#    list: [1.48805966e-2, 3.96674975e-2, 7.4473299e-2]
+
+state:
+  type: monatomic-noneq-plasma2
+  atmospheric_pressure: 101325.0    # Pa
+  average_cv: 1.5                   # in unit of R
+  elements: [Ar, E]
+  species: [Ar, Ar+, Ars, E]
+  base_species: [Ar, Ar+, E]
+  background_species: Ar
+  # initial_condition: trevilo-cases/torch_4sp2_chem/nominal/AxialICPTorch.ic.h5
+  # initial_condition: trevilo-cases/torch_4sp2_chem/nominal/output/AxialICPTorch-00005000.h5
+  initial_condition: trevilo-cases/torch_4sp2_chem/nominal/output/AxialICPTorch-00010000.h5
+
+boundary:
+  location: left
+  type: inflow
+  generate_new_condition: true
+  profile: trevilo-cases/torch_4sp2_chem/nominal/AxialICPTorch.inflow.txt
+  sat_strength: 10.0
+
+torch_config:
+  flow-rate: 40.0  #SLPM
+  species_mole_fraction: 1.0e-7
+
+elements:
+  - name: Ar
+    mass: 39.948e-3 # kg/mol
+  - name: E
+    mass: 5.4858e-7
+
+species:
+  - name: Ar
+    composition: {Ar: 1}
+    formation_energy: 0.0
+  - name: Ar+
+    composition: {Ar: 1, E: -1}
+    formation_energy: 1.521e6   # J/mol
+  - name: Ars
+    composition: {Ar: 1}
+    formation_energy: 1116419.84847284
+  - name: E
+    composition: {E: 1}
+    formation_energy: 0.0
+
+reactions:
+  # Rxn 1: IONIZATION (from ground state) ###########################
+  - equation: Ar + E => Ar+ + E + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_4sp2_chem/nominal/rate-coefficients/Ionization_Ground.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 2: 3 body recombination to ground  ##########################
+  - equation: Ar+ + E + E => Ar + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_4sp2_chem/nominal/rate-coefficients/Recombination_Ground.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 3: ionization from metastable  ##########################
+  - equation: Ars + E => Ar+ + E + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_4sp2_chem/nominal/rate-coefficients/Ionization_Lumped.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 4: 3 body recombination to metastable  ##########################
+  - equation: Ar+ + E + E => Ars + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_4sp2_chem/nominal/rate-coefficients/Recombination_Lumped.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 5: excitation from ground to metastable  ##########################
+  - equation: Ar + E => Ars + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_4sp2_chem/nominal/rate-coefficients/Excitation_Lumped.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+  # Rxn 6: de-excitation from metastable  ##########################
+  - equation: Ars + E => Ar + E
+    rate_type: table
+    table:
+      filename: trevilo-cases/torch_4sp2_chem/nominal/rate-coefficients/Deexcitation_Lumped.h5
+      x_logscale: false
+      y_logscale: false
+      interpolation: true
+
+# collisions
+collision_integrals:
+  - pair: coulomb-repulsive
+    order: [1, 1]
+    type: table
+    table:
+      filename: test/collision_integral/Coulomb11_rep.h5
+      x_logscale: true
+      y_logscale: true
+      interpolation: true
+  - pair: coulomb-attractive
+    order: [1, 1]
+    type: table
+    table:
+      filename: test/collision_integral/Coulomb11_att.h5
+      x_logscale: true
+      y_logscale: true
+      interpolation: true
+  - pair: [Ar, E]
+    order: [1, 1]
+    type: table
+    table:
+      filename: test/collision_integral/Ar_E_11.h5
+      x_logscale: true
+      y_logscale: true
+      interpolation: true
+  - pair: [Ar, Ar+]
+    order: [1, 1]
+    type: table
+    table:
+      filename: test/collision_integral/Devoto.argon.IA.h5
+      dataset: Qia
+      x_logscale: true
+      y_logscale: true
+      interpolation: true
+  - pair: [Ar, Ar]
+    order: [1, 1]
+    type: table
+    table:
+      filename: test/collision_integral/Amdur_Mason.AA11.h5
+      dataset: dataset
+      x_logscale: true
+      y_logscale: true
+      interpolation: true
+  - pair: [Ar, Ar]
+    order: [2, 2]
+    type: arrhenius
+    arrhenius:
+      coefficients: [1.7e-18, -0.25, 0.0]
+  - pair: coulomb-repulsive
+    order: [2, 2]
+    type: table
+    table:
+      filename: test/collision_integral/MasonMunnSmith1967.h5
+      dataset: O(2,2)-repulsive
+      x_logscale: true
+      y_logscale: true
+      interpolation: true

@@ -1,0 +1,117 @@
+prefix: Plasma0D
+
+timer: false
+
+#verbose: false
+verbose: true
+
+grid:
+  periodic: true
+  discretization: SBP1-2
+  # If mesh_file is not specified, read size and domain_length.
+  size: 3
+  domain_length: 1.0
+
+output:
+  directory: trevilo-cases/plasma0d/4species/output
+  frequency: 1000
+
+time_integration:
+  type: implicit-explicit-euler
+  # type: steady-state-solver
+  number_of_timesteps: 10000
+  timestep_size: 1.0e-3
+  implicit_solver:
+    threshold: 1.0e-14
+    # linear_solver: gmres
+    # schur_complement: true
+
+system:
+  type: plasma-0d
+  # heat-source:
+  #   enabled: true
+  #   amplitude: 2500000.0
+  #   frequency: 0.0
+  #   location: 0.145
+  #   scale: 0.1
+
+state:
+  type: plasma-0d
+  atmospheric_pressure: 101325.0    # Pa
+  #temperature: 4000.0               # K
+  #temperature: 8000.0               # K
+  #temperature: 10000.0               # K
+  temperature: 12000.0               # K
+  average_cv: 1.5                   # in unit of R
+  elements: [Ar, E]
+  species: [Ar, Ar+, Ar*, E]
+  #species: [Ar, Ar+, E]
+  base_species: [Ar, Ar+, E]
+  background_species: Ar
+  initial_condition: trevilo-cases/plasma0d/4species/plasma0d.ic.h5
+
+elements:
+  - name: Ar
+    mass: 39.948e-3 # kg/mol
+  - name: E
+    mass: 5.4858e-7
+
+species:
+  - name: Ar
+    composition: {Ar: 1}
+    formation_energy: 0.0
+  - name: Ar+
+    composition: {Ar: 1, E: -1}
+    formation_energy: 1.521e6   # J/mol
+  - name: Ar*
+    composition: {Ar: 1}
+    formation_energy: 1.114e6
+  - name: E
+    composition: {E: 1}
+    formation_energy: 0.0
+
+reactions:
+  # Rxn 1: IONIZATION #############################################
+  - equation: Ar + E <=> Ar+ + E + E
+    rate_type: arrhenius
+    arrhenius:    # output unit (m3/mol)^n/s, temperature unit in K
+      coefficients: [7.4373e10, 0.0, 2.16853e5]
+    detailed_balance:
+      rate_type: arrhenius
+      arrhenius:
+        coefficients: [4.8116e-2, 1.5, 1.8288e5]
+  # Rxn 2: EXCITATION  #############################################
+  - equation: Ar + E <=> Ar* + E
+    rate_type: table
+    table:
+      # filename: test/reactions/excitation.5000K.txt
+      filename: test/reactions/excitation.3000K.ion1e-4.h5
+      x_logscale: true
+      y_logscale: true
+      interpolation: true
+    detailed_balance:
+      rate_type: arrhenius
+      arrhenius:
+        coefficients: [12.0, 0.0, 1.3401e5]
+  # Rxn 3: STEPWISE IONIZATION######################################
+  - equation: Ar* + E <=> Ar+ + E + E
+    rate_type: table
+    table:
+      filename: test/reactions/step-ionization.3000K.ion1e-4.h5
+      x_logscale: true
+      y_logscale: true
+      interpolation: true
+    detailed_balance:
+      rate_type: arrhenius
+      arrhenius:
+        coefficients: [4.00968e-3, 1.5, 4.88696e4]
+
+
+parameter_explore_input:
+  output_directory: trevilo-cases/plasma0d/4species/plasma0d
+parameter_explore:
+  - variable: [state, temperature]
+    min: 6000.0
+    max: 15000.0
+    log_scale: false
+    sample_size: 10
