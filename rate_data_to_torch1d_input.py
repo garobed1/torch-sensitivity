@@ -11,10 +11,11 @@ samples in .h5 format
 
 title = "torch1d-propagation-dev"
 
+home = os.environ("HOME")
 # template_file = "torch1d_argon_sample_config_template.yml"
-template_file = "trevilo-cases/torch_7sp_chem/nominal/axial_icp_torch.yml"
-sample_dir = "../torch-chemistry/argon/results/sevenSpecies"
-output_dir = f"results/{title}"
+template_file = f"{home}/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/axial_icp_torch.yml"
+sample_dir = f"{home}/torch-chemistry/argon/results/sevenSpecies"
+output_dir = f"{home}/torch-sensitivity/results/{title}"
 
 #TODO: fix this, find the formation energies of each
 formation_energy = {'Ar*': 1.114e6, # full lumped excited
