@@ -11,10 +11,10 @@ samples in .h5 format
 
 title = "torch1d-propagation-dev"
 
-home = os.environ("HOME")
+home = os.environ["HOME"]
 # template_file = "torch1d_argon_sample_config_template.yml"
 template_file = f"{home}/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/axial_icp_torch.yml"
-sample_dir = f"{home}/torch-chemistry/argon/results/sevenSpecies"
+sample_dir = f"{home}/torch-chemistry/argon/results/test"
 output_dir = f"{home}/torch-sensitivity/results/{title}"
 
 #TODO: fix this, find the formation energies of each
@@ -28,15 +28,15 @@ formation_energy = {'Ar*': 1.114e6, # full lumped excited
 
 name_to_species = {'meta':'Arm',
                    'res':'Arr',
-                   'fourp':'Ar4p',
-                   'higher':'Ar**',
+                   'fourp':'Arp',
+                   'higher':'Arh',
                    'Ground':'Ar'
                    }
 
 def excitation_eq(name, name2):
     return 'Ar + E => ' + name_to_species[name] + ' + E'
 
-def dexcitation_eq(name, name2):
+def deexcitation_eq(name, name2):
     return name_to_species[name] + ' + E => Ar + E'
 
 def ionization_eq(name, name2):
@@ -50,7 +50,7 @@ def stepexcitation_eq(name, name2):
 
 reaction_eq_dict = {
     'Excitation': excitation_eq,
-    'Dexcitation':dexcitation_eq,
+    'Deexcitation':deexcitation_eq,
     'Ionization':ionization_eq,
     'Recombination':recombination_eq,
     'StepExcitation':stepexcitation_eq,

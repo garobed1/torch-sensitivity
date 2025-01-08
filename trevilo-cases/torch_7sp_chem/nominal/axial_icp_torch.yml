@@ -19,8 +19,8 @@ output:
 time_integration:
   # type: im-ex-RK222
   type: implicit-explicit-euler
-  #  number_of_timesteps: 5000
-  #  timestep_size: 1.0e-5
+  # number_of_timesteps: 5000
+  # timestep_size: 1.0e-5
   number_of_timesteps: 1000
   timestep_size: 1.0e-4
   implicit_solver:
@@ -88,12 +88,12 @@ state:
   species: [Ar, Ar+, Arm, Arr, Arp, Arh, E]
   base_species: [Ar, Ar+, E]
   background_species: Ar
-  initial_condition: trevilo-cases/torch_7sp_chem/nominal/output/AxialICPTorch-00013000.h5
+  # initial_condition: trevilo-cases/torch_7sp_chem/nominal/output/AxialICPTorch-00013000.h5
   # initial_condition: trevilo-cases/torch_7sp_chem/nominal/output/AxialICPTorch-00012000.h5
   # initial_condition: trevilo-cases/torch_7sp_chem/nominal/output/AxialICPTorch-00011000.h5
   # initial_condition: trevilo-cases/torch_7sp_chem/nominal/output/AxialICPTorch-00010000.h5
   # initial_condition: trevilo-cases/torch_7sp_chem/nominal/output/AxialICPTorch-00005000.h5
-  # initial_condition: trevilo-cases/torch_7sp_chem/nominal/AxialICPTorch.ic.h5
+  initial_condition: trevilo-cases/torch_7sp_chem/nominal/AxialICPTorch.ic.h5
 
 boundary:
   location: left

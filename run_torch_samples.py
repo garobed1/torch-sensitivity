@@ -24,7 +24,7 @@ python torch1d.py input_file.yml
 
 title = "torch1d-propagation-dev"
 
-home = os.environ("HOME")
+home = os.environ["HOME"]
 sample_dir = f"{home}/torch-sensitivity/results/{title}"
 
 torch1d_exec = f"{home}/torch1d/torch1d.py"
@@ -36,7 +36,9 @@ N = len(samples)
 
 cases = divide_cases(N, size)
 
-for sample in samples[cases]:
+for isamp in cases[rank]:
+
+    sample = samples[isamp]
 
     # TODO: In each sample, detect which models to run
     # For now, just run torch1d based on yml file presence
@@ -56,7 +58,9 @@ for sample in samples[cases]:
         for fname in os.listdir(dir):
             if fname.endswith('.yml'):
                 torch1d_in = fname
+
+        inputfile = dir + '/' + torch1d_in
         
         # run torch1d
-        run(["python3", "torch1d", torch1d_in])
+        run(["python3", "torch1d.py", inputfile])
 
