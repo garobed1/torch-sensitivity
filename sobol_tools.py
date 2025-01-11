@@ -43,7 +43,70 @@ def computeSobolIndices(O_A, O_B, O_AB, ndim, cat):
     return res.first_order, res.total_order
 
 
+# map AB sample indices to correct sample sets for plasma reaction types
+def mapABReaction(isamp, Nsamples, group, sample_exc, sample_ion, sample_step_exc, 
+                  Nvars_exc, Nvars_ion, Nvars_step_exc):
 
+    if group == 'A' or group == 'B':
+        return isamp%Nsamples, None
+
+    # otherwise, we need to compute the appropriate AB index here
+    reactions = []
+    Nvars = 0
+    if sample_exc:
+        reactions.append(0)
+        Nvars += Nvars_exc
+    if sample_ion:
+        reactions.append(1)
+        Nvars += Nvars_ion
+    if sample_step_exc:
+        reactions.append(2)
+        Nvars += Nvars_step_exc
+
+    # first determine which reaction we're working with based on sample flags
+    if len(reactions) == 0:
+        print("No valid reactions!")
+        return
+    elif len(reactions) == 1:
+        reaction_ind = 0
+    elif len(reactions) == 2:
+        if isamp < Nsamples*Nvars_exc:
+            reaction_ind = 0
+        else:
+            reaction_ind = 1
+    else:
+        if isamp < Nsamples*Nvars_exc:
+            reaction_ind = 0
+        elif isamp >= Nsamples*Nvars_exc and isamp <= Nsamples*Nvars_exc + Nsamples*Nvars_ion:
+            reaction_ind = 1
+        else:
+            reaction_ind = 2
+
+    reaction_bin = reactions[reaction_ind]
+       
+    # NOTE: Currently only works if all three reaction types are considered for UQ
+    # next determine the appropriate index
+    breakpoint()
+    if reaction_bin == 0 or reaction_bin == 1:
+        if reaction_ind == 0:
+            return isamp, None
+        if reaction_ind == 1:
+            return isamp - Nsamples*Nvars_exc, None
+    if reaction_bin == 2:
+        isamp_base = isamp - Nsamples*Nvars_exc - Nsamples*Nvars_ion
+
+        isamp_cand = 0 + isamp_base
+        # transform to appropriate sub reaction index
+        thresh = 0
+        red = 0
+        count = 0
+        while isamp_base >= thresh:
+            isamp_cand -= red
+            red = Nvars_exc - 1 - count
+            thresh += red
+            count += 1
+
+        return isamp_cand, count-1
 
 
 
@@ -91,3 +154,5 @@ if __name__ == "__main__":
     print(sobol_indices(func=func2, n=N, dists=[uniform(), uniform()]).first_order)
 
     breakpoint()
+
+
