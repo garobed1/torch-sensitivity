@@ -42,14 +42,14 @@ def computeSobolIndices(O_A, O_B, O_AB, ndim, cat):
 
     return res.first_order, res.total_order
 
-
+# TODO: Write test for this function
 # map AB sample indices to correct sample sets for plasma reaction types
 def mapABReaction(isamp, Nsamples, group, sample_exc, sample_ion, sample_step_exc, 
                   Nvars_exc, Nvars_ion, Nvars_step_exc):
 
     if group == 'A' or group == 'B':
-        return isamp%Nsamples, None
-
+        return isamp%Nsamples, isamp%Nsamples, isamp%Nsamples, group, group, group, None
+    
     # otherwise, we need to compute the appropriate AB index here
     reactions = []
     Nvars = 0
@@ -71,27 +71,50 @@ def mapABReaction(isamp, Nsamples, group, sample_exc, sample_ion, sample_step_ex
         reaction_ind = 0
     elif len(reactions) == 2:
         if isamp < Nsamples*Nvars_exc:
+            group_ion = 'A'
+            group_exc = 'AB'
+            group_step_exc = 'A'
             reaction_ind = 0
         else:
+            group_exc = 'A'
+            group_ion = 'AB'
+            group_step_exc = 'A'
             reaction_ind = 1
     else:
-        if isamp < Nsamples*Nvars_exc:
+        # replace excitation sample with B
+        if isamp < Nsamples*Nvars_exc: 
+            group_ion = 'A'
+            group_step_exc = 'A'
+            group_exc = 'AB'
             reaction_ind = 0
-        elif isamp >= Nsamples*Nvars_exc and isamp <= Nsamples*Nvars_exc + Nsamples*Nvars_ion:
+
+        # replace ionization sample with B
+        elif isamp >= Nsamples*Nvars_exc and isamp < Nsamples*Nvars_exc + Nsamples*Nvars_ion:
+            group_exc = 'A'
+            group_step_exc = 'A'
+            group_ion = 'AB'
             reaction_ind = 1
+
+        # replace stepwise excitation sample with B
         else:
+            group_exc = 'A'
+            group_ion = 'A'
+            group_step_exc = 'AB'
             reaction_ind = 2
 
     reaction_bin = reactions[reaction_ind]
        
     # NOTE: Currently only works if all three reaction types are considered for UQ
     # next determine the appropriate index
-    breakpoint()
+    # breakpoint()
     if reaction_bin == 0 or reaction_bin == 1:
         if reaction_ind == 0:
-            return isamp, None
+            breakpoint()
+
+            return isamp, isamp%Nsamples, isamp%Nsamples, group_exc, group_ion, group_step_exc, None
         if reaction_ind == 1:
-            return isamp - Nsamples*Nvars_exc, None
+            breakpoint()
+            return (isamp - Nsamples*Nvars_exc)%Nsamples, isamp - Nsamples*Nvars_exc, (isamp - Nsamples*Nvars_exc)%Nsamples, group_exc, group_ion, group_step_exc, None
     if reaction_bin == 2:
         isamp_base = isamp - Nsamples*Nvars_exc - Nsamples*Nvars_ion
 
@@ -102,11 +125,11 @@ def mapABReaction(isamp, Nsamples, group, sample_exc, sample_ion, sample_step_ex
         count = 0
         while isamp_base >= thresh:
             isamp_cand -= red
-            red = Nvars_exc - 1 - count
+            red = (Nvars_exc - 1 - count)*Nsamples
             thresh += red
             count += 1
 
-        return isamp_cand, count-1
+        return isamp_base%Nsamples, isamp_base%Nsamples, isamp_cand, group_exc, group_ion, group_step_exc, count-1
 
 
 
