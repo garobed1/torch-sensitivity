@@ -109,11 +109,9 @@ def mapABReaction(isamp, Nsamples, group, sample_exc, sample_ion, sample_step_ex
     # breakpoint()
     if reaction_bin == 0 or reaction_bin == 1:
         if reaction_ind == 0:
-            breakpoint()
 
             return isamp, isamp%Nsamples, isamp%Nsamples, group_exc, group_ion, group_step_exc, None
         if reaction_ind == 1:
-            breakpoint()
             return (isamp - Nsamples*Nvars_exc)%Nsamples, isamp - Nsamples*Nvars_exc, (isamp - Nsamples*Nvars_exc)%Nsamples, group_exc, group_ion, group_step_exc, None
     if reaction_bin == 2:
         isamp_base = isamp - Nsamples*Nvars_exc - Nsamples*Nvars_ion
