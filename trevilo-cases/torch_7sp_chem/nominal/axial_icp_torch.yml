@@ -21,8 +21,8 @@ time_integration:
   type: implicit-explicit-euler
   # number_of_timesteps: 5000
   # timestep_size: 1.0e-5
-  number_of_timesteps: 1000
-  timestep_size: 1.0e-4
+  number_of_timesteps: 10000
+  timestep_size: 5.0e-6
   implicit_solver:
     threshold: 1.0e-8
     # linear_solver: gmres
