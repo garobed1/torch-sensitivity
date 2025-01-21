@@ -35,8 +35,11 @@ def computeSobolIndices(O_A, O_B, O_AB, ndim, cat):
     f_A = np.copy(O_A.data[cat])
     f_B = np.copy(O_B.data[cat])
     f_AB = np.copy(O_AB.data[cat])
-    f_AB_n = np.reshape(f_AB, [ndim, odim, N_A])
-
+    # f_AB_n = np.reshape(f_AB, [ndim, odim, N_A])
+    f_AB_n = np.zeros([ndim, odim, N_A])
+    for i in range(ndim):
+        f_AB_n[i] = f_AB[:, i*N_A:(i+1)*N_A]
+    # breakpoint()
     func = {'f_A': f_A, 'f_B': f_B, 'f_AB': f_AB_n}
     res = sobol_indices(func=func, n=N_A)
 

@@ -14,7 +14,7 @@ title = "torch1d-propagation-dev"
 home = os.environ["HOME"]
 # template_file = "torch1d_argon_sample_config_template.yml"
 template_file = f"{home}/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/axial_icp_torch.yml"
-sample_dir = f"{home}/torch-chemistry/argon/results/test"
+sample_dir = f"{home}/torch-chemistry/argon/results/test_stepwise_2/"
 output_dir = f"{home}/torch-sensitivity/results/{title}"
 
 #TODO: fix this, find the formation energies of each
