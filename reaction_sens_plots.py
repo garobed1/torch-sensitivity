@@ -2,9 +2,11 @@ import numpy as np
 import pickle
 import matplotlib.pyplot as plt
 import pandas as pd
+import os
 
+home = os.getenv('HOME')
+sample_dir = home + "/torch-chemistry/argon/results/test_stepwise_2/"
 res_dir = "results/test_stepwise_2/"
-
 
 # number of principal components to examine in sensitivity analysis
 N_T = 512
@@ -37,11 +39,21 @@ with open(res_dir + "/eigvec.pickle", 'rb') as f:
 with open(res_dir + "/scores.pickle", 'rb') as f:
     scores = pickle.load(f)
 with open(res_dir + "/frac.pickle", 'rb') as f:
-    scores = pickle.load(f)
+    frac = pickle.load(f)
 with open(res_dir + "/r1.pickle", 'rb') as f:
     r1 = pickle.load(f)
 with open(res_dir + "/r2.pickle", 'rb') as f:
     r2 = pickle.load(f)
+
+# nominal cross sections
+with open(sample_dir + '/argon_excitation_sigma.pickle', 'rb') as f:
+    sigma_exc = pickle.load(f)
+with open(sample_dir + '/argon_ionization_sigma.pickle', 'rb') as f:
+    sigma_ion = pickle.load(f)
+            
+sig_exc_sum = []
+sig_ion_sum = []
+
 
 reaction_types = list(mean.keys())
 
@@ -53,6 +65,8 @@ df = pd.read_csv('~/torch-chemistry/argon/input-data/ArI-levels-nist.csv')
 configuration = df['Configuration']
 term = df['Term']
 J = df['J']
+energy_level = df['Level (eV)'].to_numpy()
+# breakpoint()
 
 total_config = []
 for i in range(0,len(df)):
@@ -72,8 +86,17 @@ for i in range(0,len(df)):
         config_perturb_dist[total_config[i]] = {}
 
 config_list = np.array(list(config_perturb_dist.keys()))
+
+for i in config_list:
+    sig_exc_sum.append(sum(sigma_exc[i]))
+    sig_ion_sum.append(sum(sigma_ion[i]))
+
+sig_sum = {"Excitation":np.array(sig_exc_sum),
+           "Ionization":np.array(sig_ion_sum),
+           }
 # breakpoint()
 
+# NOTE: Ordering of species is already in 
 for ptype in reaction_types:
     for prate in lumped_rates:
 
@@ -109,3 +132,38 @@ for ptype in reaction_types:
         plt.title(f"Argon {ptype} {prate} Sensitivity")
         plt.savefig(res_dir + f"plots/argon-{ptype}-{prate}-config-sens-KL.pdf", bbox_inches='tight')
         plt.clf()
+
+
+        # We also want to plot the magnitude of the cross sections to normalize the sensitivities
+        # e.g. the species is sensitive but its magnitude is small
+        # other integral terms are same for all rate coefficients, so we can look at just sigma
+        # pull up nominal data
+        if ptype in sig_sum:
+            fig, ax = plt.subplots(layout='constrained')
+            fig.set_figheight(10)
+            fig.set_figwidth(9)
+
+            # non zero sensitivities
+
+            x = np.arange(len(sens_ind))
+            width = 0.20
+            mult = 0
+
+            xl = []
+            rect = ax.barh(x,  sig_sum[ptype][sens_ind%90], width,  label = config_list[sens_ind%90])
+            # ax.bar_label(rect, padding=N_pc)
+            # xl.append(np.mean(x) + offset)
+
+
+            plt.xlabel(rf"Magnitude")
+            # plt.grid()
+            # plt.legend()
+            ticks = []
+
+            for i in sens_ind:
+                ticks.append(config_list[i%90])
+            ax.set_yticks(x, ticks)
+            # plt.yticks)
+            plt.title(f"Argon {ptype} {prate} Cross-Section Magnitude")
+            plt.savefig(res_dir + f"plots/argon-{ptype}-{prate}-sigma-mag-KL.pdf", bbox_inches='tight')
+            plt.clf()
