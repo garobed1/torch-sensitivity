@@ -54,6 +54,13 @@ for isamp in cases[rank]:
             run_torch1d = True
             break
 
+    # check if calculation already performed
+    if os.path.isdir(dir + '/output/'):
+        for fname in os.listdir(dir + '/output/'):
+            if fname.endswith('-00010000.h5'): #completed run NOTE, need to adapt this
+                run_torch1d = False
+                break
+
     if run_torch1d:
         for fname in os.listdir(dir):
             if fname.endswith('.yml'):

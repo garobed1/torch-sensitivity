@@ -4,9 +4,16 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import os
 
+import bsr.excitation_cs as bsr_exc
+import bultel.excitation_cs as bul
+import deutsch.ionization_cs as dmi
+import bsr.ionization_cs as bsr_ion
+
+
 home = os.getenv('HOME')
 sample_dir = home + "/torch-chemistry/argon/results/test_stepwise_2/"
 res_dir = "results/test_stepwise_2/"
+plt.rcParams["font.size"] = 16
 
 # number of principal components to examine in sensitivity analysis
 N_T = 512
@@ -66,7 +73,6 @@ configuration = df['Configuration']
 term = df['Term']
 J = df['J']
 energy_level = df['Level (eV)'].to_numpy()
-# breakpoint()
 
 total_config = []
 for i in range(0,len(df)):
@@ -86,6 +92,7 @@ for i in range(0,len(df)):
         config_perturb_dist[total_config[i]] = {}
 
 config_list = np.array(list(config_perturb_dist.keys()))
+# breakpoint()
 
 for i in config_list:
     sig_exc_sum.append(sum(sigma_exc[i]))
@@ -96,19 +103,72 @@ sig_sum = {"Excitation":np.array(sig_exc_sum),
            }
 # breakpoint()
 
+
+# Grid in energy (where cross-sections will be evaluated and then used to approximate integrals)
+egrid = np.logspace(1, np.log10(300), 5001) # eV
+
 # NOTE: Ordering of species is already in 
 for ptype in reaction_types:
+
+
+    # plot nominal cross sections for this reaction type
+
+    if ptype == 'Excitation':
+
+        sigma_bsr = bsr_exc.evaluate_excitation_cross_sections(df, egrid, f"{home}/torch-chemistry/argon/input-data/bsr_argon_ground_excitation.txt")
+        sigma_bul = bul.evaluate_excitation_cross_sections(df, egrid)
+
+        # Merge cross sections---i.e., if we have BSR cross section, use it.  Otherwise, use Bultel.
+        sigma = {}
+        for key in sigma_bul.keys():
+            if (key in sigma_bsr.keys()):
+                sigma[key] = sigma_bsr[key]
+            else:
+                sigma[key] = sigma_bul[key]
+
+        inds = np.arange(0, config_list.shape[0])
+
+        # for i in inds:
+        for i in range(0, 90):
+            plt.loglog(egrid, sigma[config_list[i]], color=plt.cm.RdYlBu(i/config_list.shape[0]))
+        plt.xlabel(rf'$\epsilon$')
+        plt.ylabel(rf'$\sigma(\epsilon)$')
+        # plt.colorbar()
+        plt.savefig(res_dir + f"plots/excitation_sigma_nominal.pdf", bbox_inches='tight')
+
+
+    if ptype == 'Ionization':
+
+        sigma = dmi.evaluate_ionization_cross_sections(df, egrid)
+        # Merge cross sections---i.e., if we have BSR cross section, use it.  Otherwise, use Bultel.
+
+        inds = np.arange(0, config_list.shape[0])
+
+        # for i in inds:
+        for i in range(0, 90):
+            plt.loglog(egrid, sigma[config_list[i]], color=plt.cm.RdYlBu(i/config_list.shape[0]))
+        plt.xlabel(rf'$\epsilon$')
+        plt.ylabel(rf'$\sigma(\epsilon)$')
+        # plt.colorbar()
+        plt.savefig(res_dir + f"plots/ionization_sigma_nominal.pdf", bbox_inches='tight')
+
+    # breakpoint()
+
     for prate in lumped_rates:
 
         fig, ax = plt.subplots(layout='constrained')
-        fig.set_figheight(10)
-        fig.set_figwidth(9)
+        fig.set_figheight(6.5)
+        if prate == 'higher':
+            fig.set_figheight(9.5)
+        fig.set_figwidth(7)
 
         # non zero sensitivities
         sens_ind = np.nonzero(r1[ptype][prate][0,:])[0]
 
         x = np.arange(len(sens_ind))
-        width = 0.20
+        width = 0.30
+        # if prate == 'higher':
+        #     width = 0.51
         mult = 0
 
         xl = []
@@ -124,12 +184,18 @@ for ptype in reaction_types:
         # plt.grid()
         # plt.legend()
         ticks = []
-        
+        ticks_abr = []
+
         for i in sens_ind:
             ticks.append(config_list[i%90])
-        ax.set_yticks(x, ticks)
+            ticks_abr.append(config_list[i%90][19:])
+        # ax.set_yticks(x, ticks)
+        if prate == 'higher':
+            ax.set_yticks(x, ticks_abr, fontsize='9')
+        else:
+            ax.set_yticks(x, ticks_abr)
         # plt.yticks)
-        plt.title(f"Argon {ptype} {prate} Sensitivity")
+        # plt.title(f"Argon {ptype} {prate} Sensitivity")
         plt.savefig(res_dir + f"plots/argon-{ptype}-{prate}-config-sens-KL.pdf", bbox_inches='tight')
         plt.clf()
 
@@ -159,10 +225,14 @@ for ptype in reaction_types:
             # plt.grid()
             # plt.legend()
             ticks = []
+            ticks_abr = []
 
             for i in sens_ind:
                 ticks.append(config_list[i%90])
-            ax.set_yticks(x, ticks)
+                ticks_abr.append(config_list[i%90][19:])
+
+            # ax.set_yticks(x, ticks)
+            ax.set_yticks(x, ticks_abr)
             # plt.yticks)
             plt.title(f"Argon {ptype} {prate} Cross-Section Magnitude")
             plt.savefig(res_dir + f"plots/argon-{ptype}-{prate}-sigma-mag-KL.pdf", bbox_inches='tight')
