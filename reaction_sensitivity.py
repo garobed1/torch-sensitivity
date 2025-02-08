@@ -9,6 +9,7 @@ import scipy.constants as spc
 from sample_utils import *
 from sobol_tools import *
 from pca_tools import *
+from utils.rate_utils import *
 
 home = os.getenv('HOME')
 sample_dir = home + "/torch-chemistry/argon/results/test_stepwise_2/"
@@ -35,33 +36,43 @@ if os.path.exists(sample_dir + 'sig_A_000000/rates/Ionization_res.h5'):
     sample_ion = True
 if os.path.exists(sample_dir + 'sig_A_000000/rates/StepExcitation_res_meta.h5'):
     sample_step_exc = True
+if os.path.exists(sample_dir + 'excluded_states.pickle'):
+    with open(sample_dir + "excluded_states.pickle", 'r') as f:
+        excluded_states = pickle.load(f)
+else:
+    excluded_states = []
 
 ######## Number of uncertain variables
 df = pd.read_csv('~/torch-chemistry/argon/input-data/ArI-levels-nist.csv')
 configuration = df['Configuration']
 term = df['Term']
 J = df['J']
+energy_level = df['Level (eV)'].to_numpy()
+degeneracy = df['g'].to_numpy()
 
 known_configurations = ['4s', '5s', '6s',
                         '4p', '5p', '6p',
                         '3d', '4d', '5d', '6d']
 
-total_config = []
-for i in range(0,len(df)):
-    cfg = configuration[i] + "-" + term[i] + "-" + str(J[i])
-    total_config.append(cfg)
+# get all configs
+energy_level_dict, g_dict, total_config = getKnownConfigurations(df, 
+                                                                    configuration, 
+                                                                    known_configurations, 
+                                                                    term, energy_level, 
+                                                                    degeneracy, J,
+                                                                    excluded_states)
+
 
 # then keep track of "known" configs only
 config_perturb_dist = {}
 sizes = []
-for i in range(0,len(df)):
-    base_config = configuration[i][19:]
 
-    if base_config in known_configurations:
+for cfg in total_config:
+    #NOTE: Only looking at one variable per config for now
+    sizes.append(1)
+    config_perturb_dist[cfg] = {}
 
-        #NOTE: Only looking at one variable per config for now
-        sizes.append(1)
-        config_perturb_dist[total_config[i]] = {}
+
 
 config_list = list(config_perturb_dist.keys())
 

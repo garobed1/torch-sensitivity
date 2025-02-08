@@ -8,6 +8,7 @@ import bsr.excitation_cs as bsr_exc
 import bultel.excitation_cs as bul
 import deutsch.ionization_cs as dmi
 import bsr.ionization_cs as bsr_ion
+from utils.rate_utils import *
 
 
 home = os.getenv('HOME')
@@ -51,6 +52,11 @@ with open(res_dir + "/r1.pickle", 'rb') as f:
     r1 = pickle.load(f)
 with open(res_dir + "/r2.pickle", 'rb') as f:
     r2 = pickle.load(f)
+if os.path.exists(sample_dir + 'excluded_states.pickle'):
+    with open(sample_dir + "excluded_states.pickle", 'r') as f:
+        excluded_states = pickle.load(f)
+else:
+    excluded_states = []
 
 # nominal cross sections
 with open(sample_dir + '/argon_excitation_sigma.pickle', 'rb') as f:
@@ -73,23 +79,26 @@ configuration = df['Configuration']
 term = df['Term']
 J = df['J']
 energy_level = df['Level (eV)'].to_numpy()
+degeneracy = df['g'].to_numpy()
 
-total_config = []
-for i in range(0,len(df)):
-    cfg = configuration[i] + "-" + term[i] + "-" + str(J[i])
-    total_config.append(cfg)
+# get all configs
+energy_level_dict, g_dict, total_config = getKnownConfigurations(df, 
+                                                                    configuration, 
+                                                                    known_configurations, 
+                                                                    term, energy_level, 
+                                                                    degeneracy, J,
+                                                                    excluded_states)
+
 
 # then keep track of "known" configs only
 config_perturb_dist = {}
 sizes = []
-for i in range(0,len(df)):
-    base_config = configuration[i][19:]
 
-    if base_config in known_configurations:
+for cfg in total_config:
+    #NOTE: Only looking at one variable per config for now
+    sizes.append(1)
+    config_perturb_dist[cfg] = {}
 
-        #NOTE: Only looking at one variable per config for now
-        sizes.append(1)
-        config_perturb_dist[total_config[i]] = {}
 
 config_list = np.array(list(config_perturb_dist.keys()))
 # breakpoint()
@@ -127,9 +136,9 @@ for ptype in reaction_types:
                 sigma[key] = sigma_bul[key]
 
         inds = np.arange(0, config_list.shape[0])
-
-        # for i in inds:
-        for i in range(0, 90):
+        breakpoint()
+        for i in inds:
+        # for i in range(0, 90):
             plt.loglog(egrid, sigma[config_list[i]], color=plt.cm.RdYlBu(i/config_list.shape[0]))
         plt.xlabel(rf'$\epsilon$')
         plt.ylabel(rf'$\sigma(\epsilon)$')
@@ -144,8 +153,8 @@ for ptype in reaction_types:
 
         inds = np.arange(0, config_list.shape[0])
 
-        # for i in inds:
-        for i in range(0, 90):
+        for i in inds:
+        # for i in range(0, 90):
             plt.loglog(egrid, sigma[config_list[i]], color=plt.cm.RdYlBu(i/config_list.shape[0]))
         plt.xlabel(rf'$\epsilon$')
         plt.ylabel(rf'$\sigma(\epsilon)$')
@@ -174,7 +183,7 @@ for ptype in reaction_types:
         xl = []
         for i in range(N_pc):
             offset = width*mult
-            rect = ax.barh(x + offset,  abs(r1[ptype][prate][i,sens_ind]), width,  label = config_list[sens_ind%90])
+            rect = ax.barh(x + offset,  abs(r1[ptype][prate][i,sens_ind]), width,  label = config_list[sens_ind%config_list.shape[0]])
             # ax.bar_label(rect, padding=N_pc)
             # xl.append(np.mean(x) + offset)
 
@@ -187,8 +196,8 @@ for ptype in reaction_types:
         ticks_abr = []
 
         for i in sens_ind:
-            ticks.append(config_list[i%90])
-            ticks_abr.append(config_list[i%90][19:])
+            ticks.append(config_list[i%config_list.shape[0]])
+            ticks_abr.append(config_list[i%config_list.shape[0]][19:])
         # ax.set_yticks(x, ticks)
         if prate == 'higher':
             ax.set_yticks(x, ticks_abr, fontsize='9')
@@ -216,7 +225,7 @@ for ptype in reaction_types:
             mult = 0
 
             xl = []
-            rect = ax.barh(x,  sig_sum[ptype][sens_ind%90], width,  label = config_list[sens_ind%90])
+            rect = ax.barh(x,  sig_sum[ptype][sens_ind%config_list.shape[0]], width,  label = config_list[sens_ind%config_list.shape[0]])
             # ax.bar_label(rect, padding=N_pc)
             # xl.append(np.mean(x) + offset)
 
@@ -228,8 +237,8 @@ for ptype in reaction_types:
             ticks_abr = []
 
             for i in sens_ind:
-                ticks.append(config_list[i%90])
-                ticks_abr.append(config_list[i%90][19:])
+                ticks.append(config_list[i%config_list.shape[0]])
+                ticks_abr.append(config_list[i%config_list.shape[0]][19:])
 
             # ax.set_yticks(x, ticks)
             ax.set_yticks(x, ticks_abr)
