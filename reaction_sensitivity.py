@@ -37,7 +37,7 @@ if os.path.exists(sample_dir + 'sig_A_000000/rates/Ionization_res.h5'):
 if os.path.exists(sample_dir + 'sig_A_000000/rates/StepExcitation_res_meta.h5'):
     sample_step_exc = True
 if os.path.exists(sample_dir + 'excluded_states.pickle'):
-    with open(sample_dir + "excluded_states.pickle", 'r') as f:
+    with open(sample_dir + "excluded_states.pickle", 'rb') as f:
         excluded_states = pickle.load(f)
 else:
     excluded_states = []

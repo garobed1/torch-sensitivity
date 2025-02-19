@@ -53,7 +53,7 @@ with open(res_dir + "/r1.pickle", 'rb') as f:
 with open(res_dir + "/r2.pickle", 'rb') as f:
     r2 = pickle.load(f)
 if os.path.exists(sample_dir + 'excluded_states.pickle'):
-    with open(sample_dir + "excluded_states.pickle", 'r') as f:
+    with open(sample_dir + "excluded_states.pickle", 'rb') as f:
         excluded_states = pickle.load(f)
 else:
     excluded_states = []
