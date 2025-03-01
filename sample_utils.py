@@ -21,21 +21,24 @@ Intended to be used for either inputs or outputs
 class SampleData():
     
 
-    def __init__(self, categories, sizes, scales=None, precomp=None):
+    def __init__(self, categories, sizes, scales=None, precomp=None, selected_filedata = {}):
 
         #NOTE: precomp dimensions should override sizes, or at least assert
-        assert len(categories) == len(sizes)
+        assert len(categories) == len(list(sizes.keys()))
 
         self.data = {}
         self.inds = {}
         self.inds_inv = {}
         self.scales = {}
+        self.selected_filedata = selected_filedata
 
         # initialize and generate full array indices
         c  = 0
-        for cat, size in zip(categories, sizes):
-            self.data[cat] = np.empty([size, 0])
-            self.inds[cat] = list(range(c, c+size))
+        # for cat, size in zip(categories, sizes):
+        for cat in categories:
+            self.data[cat] = np.empty([sizes[cat], 0])
+            self.inds[cat] = list(range(c, c+sizes[cat]))
+            self.selected_filedata[cat] = []
             
             #NOTE: inds dictionary entries should be unique, so inverting should work
             c2 = 0
@@ -43,7 +46,7 @@ class SampleData():
                 self.inds_inv[ind] = [cat, c2]
                 c2+=1
 
-            c = c+size
+            c = c+sizes[cat]
 
 
         # if we have precomputed data in a similar dict, try adding it now
@@ -85,28 +88,80 @@ class SampleData():
 #------------------------------------------------------------------------------
 
     def createData(self, N, scale=None, method='sobol'):
-        # generate samples internally
-        ndim = self.getNDim()
-        
-        #TODO: Implement other methods
-        add = sobolSampleGen(ndim, N).T
 
+        
         # scale is dict
         if scale is not None and self.scales is None:
             self.scales = scale
-            add_scale = uniformToDist(add, self.scales, self.inds)
+            # add_scale = uniformToDist(add, self.scales, self.inds)
         elif self.scales is not None:
             if scale is not None:
                 print("Distribution mapping already present")
 
-            add_scale = uniformToDist(add, self.scales, self.inds)
-            
-
         # uniform hypercube
         else:
-            add_scale = add
+            # add_scale = add
+            print("No scales present, set self.scales!")
+            return 
 
-        self.addDataArray(add_scale)
+        # distinguish between newly generated random samples, and samples pulled
+        # from files
+
+        ndimtotal = self.getNDim()
+
+        r_gen = []
+        f_gen = []
+
+        ndim = 0
+        for key in self.scales.keys():
+            if self.scales[key]['dist'] != "inferred":
+                r_gen.append(key)
+                ndim += self.getNDim(key)
+            # get from file
+            else:
+                f_gen.append(key)
+
+        r_dict = {key: self.scales[key] for key in r_gen}
+        r_ind = {key: self.inds[key] for key in r_gen}
+        f_dict = {key: self.scales[key] for key in f_gen}
+        f_ind = {key: self.inds[key] for key in f_gen}
+
+        # generate samples internally
+        # ndim = self.getNDim()
+
+        add = np.zeros([ndimtotal, N])
+        # random data
+        if ndim > 0:
+            add_raw = sobolSampleGen(ndim, N).T
+
+            im, ip = 0, 0
+            for key, item in r_dict.items():
+                ip = im + self.getNDim(key)
+                add[r_ind[key], :] = add_raw[im:ip, :]
+                im = ip + 0
+
+            add = uniformToDist(add, r_dict, r_ind)
+
+        # samples from file
+        for key, item in f_dict.items():
+            fname = item["datadir"]
+
+            with open(fname, 'rb') as f:
+                arr = np.load(f)
+
+            # Nchoice = arr.shape[0]
+            Nchoice = list(range(arr.shape[0]))
+
+            Nchoice = [x for x in Nchoice if x not in self.selected_filedata[key]]
+            breakpoint()
+            Nind = np.random.choice(Nchoice, N, replace=False)
+            self.selected_filedata[key] = Nind
+            
+            add_file = arr[Nind,:].T
+            add[f_ind[key], :] = add_file[:self.getNDim(key),:]
+
+
+        self.addDataArray(add)
         
 #------------------------------------------------------------------------------
 
@@ -196,21 +251,22 @@ class SampleData():
         Given the current sample data as A, generate 
         """
         cats = self.getCategories()
-        sizes = [self.getNDim(x) for x in cats]
+        sizes = {x: self.getNDim(x) for x in cats}
 
         # SD_A is the current instance
         SD_A = self
 
         # independent sample for B
         if SD_B_pre is None:
-            SD_B = SampleData(cats, sizes, precomp=sobolSampleGen(self.getNDim(), self.getNSamples()).T)
+            # SD_B = SampleData(cats, sizes, precomp=sobolSampleGen(self.getNDim(), self.getNSamples()).T)
+            SD_B = SampleData(cats, sizes, scales=self.scales, selected_filedata=SD_A.selected_filedata)
+            SD_B.createData(N=self.getNSamples())
         else:
             SD_B = SD_B_pre
 
         # now produce SD_AB as a lambda function with __call__ similar to SampleData
         SD_AB = lambda x, cat=None : _sobolABGen(x, SD_A, SD_B, cat)
         # SD_AB = ABSamples(SD_A, SD_B)
-
 
         return SD_A, SD_B, SD_AB
     
@@ -293,12 +349,11 @@ def uniformToDist(data, scales, inds):
             for i in range(len(ind)):
 
                 data_s[ind[i], :] = transformDist(data[ind[i], :], 
-                                scale_info['dist'][i], scale_info['loc'][i], scale_info['scale'][i])
+                                scale_info['dist'], scale_info['loc'][i], scale_info['scale'][i])
 
         else: # apply same dist to all variables in category
 
             for i in range(len(ind)):
-
                 data_s[ind[i], :] = transformDist(data[ind[i], :], 
                                 scale_info['dist'], scale_info['loc'], scale_info['scale'])
                 

@@ -45,6 +45,52 @@ def computeSobolIndices(O_A, O_B, O_AB, ndim, cat):
 
     return res.first_order, res.total_order
 
+# map AB sample indices to correct sample sets for plasma reaction types
+def mapABReaction2(isamp, Nsamples, group, 
+                  Nvars, NvarsTotal):
+
+    isamp_dict = {}
+    group_dict = {}
+
+    for rtype in Nvars.keys():
+        isamp_dict[rtype] = isamp%Nsamples
+        group_dict[rtype] = group
+
+
+    if group == 'A' or group == 'B':
+        return isamp_dict, group_dict
+    
+    # otherwise, we need to compute the appropriate AB index here
+    # first determine which reaction the AB index pulls from
+    sofar = 0
+    isamp_base = isamp + 0
+    for rtype in Nvars.keys():
+        sofar += Nvars[rtype]*Nsamples
+
+        if isamp < sofar:
+
+            rtype_AB = rtype
+            break
+
+        else:
+
+            isamp_base -= Nsamples*Nvars[rtype]
+
+    # next determine the appropriate index
+    isamp_base_reg = isamp_base%Nsamples
+    for rtype in Nvars.keys():
+        if rtype == rtype_AB:
+            isamp_dict[rtype] = isamp_base
+            group_dict[rtype] = 'AB'
+        else:
+            isamp_dict[rtype] = isamp_base_reg
+            group_dict[rtype] = 'A'
+
+    return isamp_dict, group_dict
+
+
+
+
 # TODO: Write test for this function
 # map AB sample indices to correct sample sets for plasma reaction types
 def mapABReaction(isamp, Nsamples, group, sample_exc, sample_ion, sample_step_exc, 
@@ -131,8 +177,6 @@ def mapABReaction(isamp, Nsamples, group, sample_exc, sample_ion, sample_step_ex
             count += 1
 
         return isamp_base%Nsamples, isamp_base%Nsamples, isamp_cand, group_exc, group_ion, group_step_exc, count-1
-
-
 
 
 if __name__ == "__main__":
