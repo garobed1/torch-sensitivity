@@ -15,15 +15,22 @@ home = os.getenv('HOME')
 sample_dir = home + "/torch-chemistry/argon/results/cross_section_samples_r1/"
 res_dir = "results/cross_section_samples_r1/"
 
+"""
+Without performing sensitivity analysis, simply build KL expansions of the rate 
+samples
+
+"""
+
 # number of principal components to examine in sensitivity analysis
 N_T = 512
-N_pc = 4
+N_pc = 6
 
 
 # NOTE: excluding step exc for now
-reaction_types = ['Excitation', 'Deexcitation', 'Ionization', 'Recombination']
+reaction_types = ['Excitation', 'Deexcitation', 'Ionization', 'Recombination']#, 'StepExcitation']
 
 
+sample_labels = ["A", "B", "AB"]
 
 ######## Script begins here
 
@@ -42,57 +49,7 @@ if os.path.exists(sample_dir + 'excluded_states.pickle'):
 else:
     excluded_states = []
 
-######## Number of uncertain variables
-df = pd.read_csv('~/torch-chemistry/argon/input-data/ArI-levels-nist.csv')
-configuration = df['Configuration']
-term = df['Term']
-J = df['J']
-energy_level = df['Level (eV)'].to_numpy()
-degeneracy = df['g'].to_numpy()
-
-known_configurations = ['4s', '5s', '6s',
-                        '4p', '5p', '6p',
-                        '3d', '4d', '5d', '6d']
-
-# get all configs
-energy_level_dict, g_dict, total_config = getKnownConfigurations(df, 
-                                                                    configuration, 
-                                                                    known_configurations, 
-                                                                    term, energy_level, 
-                                                                    degeneracy, J,
-                                                                    excluded_states)
-
-
-# then keep track of "known" configs only
-config_perturb_dist = {}
-sizes = []
-
-for cfg in total_config:
-    #NOTE: Only looking at one variable per config for now
-    sizes.append(1)
-    config_perturb_dist[cfg] = {}
-
-
-
-config_list = list(config_perturb_dist.keys())
-
-Nconfig = len(list(config_perturb_dist.keys())) 
-Nvars_exc = Nconfig
-Nvars_ion = Nconfig
-Nvars_step_exc = 0
-for i in range(Nconfig):
-    Nvars_step_exc += i
-
-Nvars = 0
-if sample_exc:
-    Nvars += Nvars_exc
-if sample_ion:
-    Nvars += Nvars_ion
-if sample_step_exc:
-    Nvars += Nvars_step_exc
-
-
-######## Number of A samples
+######## Number of samples
 
 Nsamples = 0
 o_name = sample_dir + "sig_A_{0:06d}/rates".format(Nsamples)
@@ -102,13 +59,24 @@ while os.path.isdir(o_name):
     o_name = sample_dir + "sig_A_{0:06d}/rates".format(Nsamples)
 
 ########
-# NOTE: We should perform sensitivity analysis on principal components 
 lumped_rates = ["meta", "res", "fourp", "higher"]
 lumped_rates_g = ["meta", "res", "fourp", "higher", "Ground"]
-rate_sizes = [N_T, N_T, N_T, N_T]
-rate_sizes_g = [N_T, N_T, N_T, N_T, N_T]
-pc_sizes = [N_pc, N_pc, N_pc, N_pc]
-pc_sizes_g = [N_pc, N_pc, N_pc, N_pc, N_pc]
+
+rate_sizes = {}
+pc_sizes = {}
+rate_sizes_g = {}
+pc_sizes_g = {}
+
+for key in lumped_rates:
+
+    rate_sizes[key] = N_T
+    pc_sizes[key] = N_pc
+
+for key in lumped_rates_g:
+
+    rate_sizes_g[key] = N_T
+    pc_sizes_g[key] = N_pc
+
 
 # NOTE: Ground ionization not working at the moment, exclude for now
 lumped_rates_g = lumped_rates
@@ -127,30 +95,28 @@ pc_sizes_g = pc_sizes
 rate_pc_samples = {}
 
 for rtype in reaction_types:
-    if rtype == "Ionization" or rtype == "Recombination":
-        rate_pc_samples[rtype] = {"A": SampleData(categories=lumped_rates_g, sizes=pc_sizes_g),
-                "B": SampleData(categories=lumped_rates_g, sizes=pc_sizes_g),
-                "AB": SampleData(categories=lumped_rates_g, sizes=pc_sizes_g)}
-    else:
-        rate_pc_samples[rtype] = {"A": SampleData(categories=lumped_rates, sizes=pc_sizes),
-                "B": SampleData(categories=lumped_rates, sizes=pc_sizes),
-                "AB": SampleData(categories=lumped_rates, sizes=pc_sizes)}
+    rate_pc_samples[rtype] = {}
+    for label in sample_labels:
+        if rtype == "Ionization" or rtype == "Recombination":
+            rate_pc_samples[rtype][label] = SampleData(categories=lumped_rates_g, sizes=pc_sizes_g)
+        else:
+            rate_pc_samples[rtype][label] = SampleData(categories=lumped_rates, sizes=pc_sizes)
 
 full_rate = {}
 for rtype in reaction_types:
-    full_rate[rtype] = {"meta": np.zeros([N_T, (Nvars+2)*Nsamples]),
-            "res": np.zeros([N_T, (Nvars+2)*Nsamples]),
-            "fourp": np.zeros([N_T, (Nvars+2)*Nsamples]),
-            "higher": np.zeros([N_T, (Nvars+2)*Nsamples])}
+    full_rate[rtype] = {"meta": np.zeros([N_T, Nsamples]),
+            "res": np.zeros([N_T, Nsamples]),
+            "fourp": np.zeros([N_T, Nsamples]),
+            "higher": np.zeros([N_T, Nsamples])}
 
 if "Ionization" in reaction_types:
-    full_rate["Ionization"]["Ground"] = np.zeros([N_T, (Nvars+2)*Nsamples])
+    full_rate["Ionization"]["Ground"] = np.zeros([N_T, Nsamples])
 if "Recombination" in reaction_types:
-    full_rate["Recombination"]["Ground"] = np.zeros([N_T, (Nvars+2)*Nsamples])
+    full_rate["Recombination"]["Ground"] = np.zeros([N_T, Nsamples])
 
 # Read results back
 c_f = 0
-for s_data in ["A", "B", "AB"]:
+for s_data in sample_labels:
 
     c = 0
     o_name = sample_dir + "sig_{0}_{1:06d}/rates".format(s_data, c)
@@ -160,14 +126,6 @@ for s_data in ["A", "B", "AB"]:
                 with h5.File("{0}/{1}_{2}.h5".format(o_name, rtype, rate), "r") as f:
                     full_rate[rtype][rate][:,c_f] = f["table"][:,1]
 
-                # with h5.File("{0}/Deexcitation_{1}.h5".format(o_name, rate), "r") as f:
-                #     full_rate_deexc[rate][:,c_f] = f["table"][:,1]
-
-                # with h5.File("{0}/Ionization_{1}.h5".format(o_name, rate), "r") as f:
-                #     full_rate_ion[rate][:,c_f] = f["table"][:,1]
-
-                # with h5.File("{0}/Recombination_{1}.h5".format(o_name, rate), "r") as f:
-                #     full_rate_recom[rate][:,c_f] = f["table"][:,1]
 
         if "Ionization" in reaction_types:
             with h5.File("{0}/Recombination_Ground.h5".format(o_name), "r") as f:
@@ -193,6 +151,7 @@ for rtype in reaction_types:
     eigvec[rtype] = {}
     scores[rtype] = {}
 
+    breakpoint()
     for rate in lumped_rates:
         mean[rtype][rate], eigval[rtype][rate], eigvec[rtype][rate], scores[rtype][rate] = estimateCovarianceEig(full_rate[rtype][rate])
 
@@ -208,22 +167,44 @@ for rtype in reaction_types:
 #                 "B": SampleData(categories=lumped_rates, sizes=pc_sizes),
 #                 "AB": SampleData(categories=lumped_rates, sizes=pc_sizes)}
 
-Ns = {"A":[0, Nsamples], "B":[Nsamples,2*Nsamples], "AB":[2*Nsamples,(Nvars+2)*Nsamples]}
+# Ns = {"A":[0, Nsamples], "B":[Nsamples,2*Nsamples], "AB":[2*Nsamples, Nsamples]}
+
+# for s_data in sample_labels:
+#     for rtype in reaction_types:
+    
+#         dd = {}
+
+#         if rtype == "Ionization" or rtype == "Recombination":            
+#             for rate in lumped_rates_g:
+#                 dd[rate] = scores[rtype][rate][:N_pc, Ns[s_data][0]:Ns[s_data][1]]
+#         else:
+#             for rate in lumped_rates:
+#                 dd[rate] = scores[rtype][rate][:N_pc, Ns[s_data][0]:Ns[s_data][1]]
+
+#         # breakpoint()
+#         rate_pc_samples[rtype][s_data].addData(dd)
+
+
+# compute variance percentage too
+frac = {}
+r1 = {}
+r2 = {}
 
 for rtype in reaction_types:
-    for s_data in ["A", "B", "AB"]:
-        dd = {}
+    frac[rtype] = {}
+    r1[rtype] = {}
+    r2[rtype] = {}
 
-        if rtype == "Ionization" or rtype == "Recombination":            
-            for rate in lumped_rates_g:
-                dd[rate] = scores[rtype][rate][:N_pc, Ns[s_data][0]:Ns[s_data][1]]
-        else:
-            for rate in lumped_rates:
-                dd[rate] = scores[rtype][rate][:N_pc, Ns[s_data][0]:Ns[s_data][1]]
+    lumped_rates_check = lumped_rates
+    if rtype == "Ionization" or rtype == "Recombination":  
+        lumped_rates_check = lumped_rates_g
 
-        # breakpoint()
-        rate_pc_samples[rtype][s_data].addData(dd)
+    for rate in lumped_rates_check:
+        print("{0} Indices: ".format(rate))
+        frac[rtype][rate] = computeVarianceFractions(eigval[rtype][rate])
+        print(frac[rtype][rate])
 
+breakpoint()
 
 ######### Test Plots
 
@@ -262,32 +243,8 @@ plt.savefig(res_dir + f"plots/argon-{ptype}-{prate}-sample-{s}-KL.pdf", bbox_inc
 
 # breakpoint()
 
-######### Estimate Sobol Indices
 
-# compute variance percentage too
-frac = {}
-r1 = {}
-r2 = {}
 
-for rtype in reaction_types:
-    frac[rtype] = {}
-    r1[rtype] = {}
-    r2[rtype] = {}
-
-    lumped_rates_check = lumped_rates
-    if rtype == "Ionization" or rtype == "Recombination":  
-        lumped_rates_check = lumped_rates_g
-
-    for rate in lumped_rates_check:
-        print("{0} Indices: ".format(rate))
-        frac[rtype][rate] = computeVarianceFractions(eigval[rtype][rate])
-        print(frac[rtype][rate])
-
-        r1[rtype][rate], r2[rtype][rate] = computeSobolIndices(rate_pc_samples[rtype]['A'], rate_pc_samples[rtype]['B'], rate_pc_samples[rtype]['AB'], Nvars, rate)
-        print(r1[rtype][rate])
-        # print(r2[rate])
-        print()
-        # breakpoint()
 
 
 

@@ -153,7 +153,6 @@ class SampleData():
             Nchoice = list(range(arr.shape[0]))
 
             Nchoice = [x for x in Nchoice if x not in self.selected_filedata[key]]
-            breakpoint()
             Nind = np.random.choice(Nchoice, N, replace=False)
             self.selected_filedata[key] = Nind
             
