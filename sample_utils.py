@@ -1,5 +1,5 @@
 from scipy.stats.qmc import scale
-from scipy.stats import norm, uniform, beta, lognorm
+from scipy.stats import norm, uniform, beta, lognorm, truncnorm
 import numpy as np
 from sobol_tools import *
 
@@ -9,7 +9,8 @@ dist_map = {
     "normal": norm,
     "uniform": uniform,
     "beta": beta,
-    "lognormal": lognorm
+    "lognormal": lognorm,
+    "tnormal": truncnorm
 }
 
 #------------------------------------------------------------------------------
@@ -153,8 +154,12 @@ class SampleData():
             Nchoice = list(range(arr.shape[0]))
 
             Nchoice = [x for x in Nchoice if x not in self.selected_filedata[key]]
-            breakpoint()
-            Nind = np.random.choice(Nchoice, N, replace=False)
+            Nind = np.random.choice(Nchoice, N, replace=True)
+            # breakpoint()
+            # try:
+            #     Nind = np.random.choice(Nchoice, N, replace=False)
+            # except:
+            #     breakpoint()
             self.selected_filedata[key] = Nind
             
             add_file = arr[Nind,:].T
@@ -345,17 +350,20 @@ def uniformToDist(data, scales, inds):
     for key, ind, in inds.items():
         scale_info = scales[key]
 
+        if "lbound" not in scale_info.keys():
+            scale_info["lbound"] = len(ind)*[None]
+
         if isinstance(scale_info["loc"], list):
             for i in range(len(ind)):
 
                 data_s[ind[i], :] = transformDist(data[ind[i], :], 
-                                scale_info['dist'], scale_info['loc'][i], scale_info['scale'][i])
+                                scale_info['dist'], scale_info['loc'][i], scale_info['scale'][i], scale_info["lbound"][i])
 
         else: # apply same dist to all variables in category
 
             for i in range(len(ind)):
                 data_s[ind[i], :] = transformDist(data[ind[i], :], 
-                                scale_info['dist'], scale_info['loc'], scale_info['scale'])
+                                scale_info['dist'], scale_info['loc'], scale_info['scale'], scale_info['lbound'][0])
                 
     return data_s
 
@@ -364,8 +372,23 @@ def uniformToDist(data, scales, inds):
 # NOTE: no beta dist capabilities yet
 def transformDist(x, dist, loc, scale, a=None, b=None):
 
-    if a is not None and b is not None:
-        x_s = dist_map[dist].ppf(x, loc=loc, scale=scale, a=a, b=b)
+    # if a is not None and b is not None:
+    #     x_s = dist_map[dist].ppf(x, loc=loc, scale=scale, a=a, b=b)
+    if a is not None and b is None:
+        if dist == 'normal':
+            x_s = dist_map["tnormal"].ppf(x, loc=loc, scale=scale, a=(a - loc) / scale, b=np.inf)
+        else: # assuming it's beta
+            x_s = dist_map[dist].ppf(x, loc=loc, scale=scale, a=a, b=np.inf)
+    elif b is not None and a is None:
+        if dist == 'normal':
+            x_s = dist_map["tnormal"].ppf(x, loc=loc, scale=scale, a=-np.inf, b=(b - loc) / scale)
+        else: # assuming it's beta
+            x_s = dist_map[dist].ppf(x, loc=loc, scale=scale, a=-np.inf, b=b)
+    elif a is not None and b is not None:
+        if dist == 'normal':
+            x_s = dist_map["tnormal"].ppf(x, loc=loc, scale=scale, a=(a - loc) / scale, b=(b - loc) / scale)
+        else: # assuming it's beta
+            x_s = dist_map[dist].ppf(x, loc=loc, scale=scale, a=a, b=b)
     else:
         x_s = dist_map[dist].ppf(x, loc=loc, scale=scale)
     

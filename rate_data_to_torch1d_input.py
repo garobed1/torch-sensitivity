@@ -14,8 +14,16 @@ title = "torch1d-propagation-dev"
 home = os.environ["HOME"]
 # template_file = "torch1d_argon_sample_config_template.yml"
 template_file = f"{home}/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/axial_icp_torch.yml"
-sample_dir = f"{home}/torch-chemistry/argon/results/test_stepwise_2/"
-output_dir = f"{home}/torch-sensitivity/results/{title}"
+# sample_dir = f"{home}/bedonian1/cross_section_samples_r1/"
+# sample_dir = f"{home}/bedonian1/cross_section_samples_r3/"
+sample_dir = f"{home}/bedonian1/cross_section_samples_r6/"
+# output_dir = f"{home}/bedonian1/torch1d_samples_r1/"
+
+output_dir = f"{home}/bedonian1/torch1d_samples_r6/"
+# output_dir = f"{home}/bedonian1/torch1d_samples_r3_no_4p_to_h/"
+# output_dir = f"{home}/bedonian1/torch1d_samples_r3_no_4p_to_h_dt/"
+
+no4phigher = False
 
 #TODO: fix this, find the formation energies of each
 formation_energy = {'Ar*': 1.114e6, # full lumped excited
@@ -81,6 +89,9 @@ for sample in samples:
 
     # check rates
     rates = os.listdir(rate_dir)
+    if no4phigher:
+        rates.remove('StepExcitation_fourp_higher.h5')
+        rates.remove('StepExcitation_higher_fourp.h5')
 
     # loop over rate data available once 
     # first, check if the argon state is accounted for
@@ -152,7 +163,6 @@ for sample in samples:
             r2 = rate_split[2]
 
         reaction_name = reaction_eq_dict[rtype](r1, r2)
-
         # set filename
         for item in template['reactions']:
             if item['equation'] == reaction_name:
