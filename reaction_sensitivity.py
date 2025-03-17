@@ -12,8 +12,8 @@ from pca_tools import *
 from utils.rate_utils import *
 
 home = os.getenv('HOME')
-sample_dir = home + "/torch-chemistry/argon/results/test_stepwise_2/"
-res_dir = "results/test_stepwise_2/"
+sample_dir = home + "/torch-chemistry/argon/results/cross_section_samples_r1/"
+res_dir = "results/cross_section_samples_r1/"
 
 # number of principal components to examine in sensitivity analysis
 N_T = 512
