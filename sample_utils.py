@@ -2,6 +2,7 @@ from scipy.stats.qmc import scale
 from scipy.stats import norm, uniform, beta, lognorm, truncnorm
 import numpy as np
 from sobol_tools import *
+from mc_tools import *
 
 
 
@@ -133,7 +134,11 @@ class SampleData():
         add = np.zeros([ndimtotal, N])
         # random data
         if ndim > 0:
-            add_raw = sobolSampleGen(ndim, N).T
+            if method == 'sobol':
+                add_raw = sobolSampleGen(ndim, N).T
+            else: # elif method == 'mc': #monte carlo
+
+                add_raw = mcSampleGen(ndim, N)
 
             im, ip = 0, 0
             for key, item in r_dict.items():

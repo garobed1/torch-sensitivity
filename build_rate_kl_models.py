@@ -13,10 +13,14 @@ from pca_tools import *
 
 home = os.getenv('HOME')
 # sample_dir = home + "/torch-chemistry/argon/results/cross_section_samples_r3/"
-sample_dir = home + "/bedonian1/cross_section_samples_r6/"
+# sample_dir = home + "/bedonian1/cross_section_samples_r6/"
+sample_dir = home + "/bedonian1/cross_section_samples_r7/"
 nom_dir = home + "/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/"
 # res_dir = "results/cross_section_samples_r3/"
-res_dir = "results/cross_section_samples_r6/"
+# res_dir = "results/cross_section_samples_r6_3/"
+res_dir = "results/cross_section_samples_r7/"
+
+mean_dir = home + "/bedonian1/mean_r6/"
 
 """
 Without performing sensitivity analysis, simply build KL expansions of the rate 
@@ -30,19 +34,36 @@ NOTE NOTE NOTE: Check notes to see where I left off
 N_T = 512
 N_pc = 6
 
+make_plots = False
 # number of samples to plot
-Ndraw = 100
+Ndraw = 1000
 clim = 200
 
 # NOTE: excluding step exc for now
 reaction_types = ['Excitation', 'Deexcitation', 'Ionization', 'Recombination']
 reaction_types_full = ['Excitation', 'Deexcitation', 'Ionization', 'Recombination', 'StepExcitation']
 
+# seemingly crash no matter what
+# crashed_runs =[30, 76, 232, 370, 416, 444, 453, 526, 535, 592, 618, 703, 839, 1217, 1229, 1234, 1302, 1373, 1569, 1721, 1857, 2032, 2254, 2466, 2805]
+crashed_runs = []
+
+# Constants
+qe = spc.e    # 1.60217663e-19 [C]
+kB = spc.k    # 1.380649e-23 [J/K]
+NA = spc.N_A  # 6.022e23 [#/mol]
+eV = qe/kB    # 11604.518 [K / eV]
+# temp grid
+T_Maxw = np.linspace(0.02, 2, 512) * eV
+
 
 # sample_labels = ["A", "B", "AB"]
 sample_labels = ["A"]
 
 ######## Script begins here
+
+# if rank == 0:
+if not os.path.isdir(res_dir):
+    os.makedirs(res_dir)
 
 sample_exc = False
 sample_ion = False
@@ -115,6 +136,8 @@ for rtype in reaction_types:
 # load rate samples nominal rates
 nom_rate = {}
 full_rate = {}
+process_label = {}
+unit_label = {}
 for rtype in reaction_types:
     full_rate[rtype] = {"meta": np.zeros([N_T, Nsamples]),
             "res": np.zeros([N_T, Nsamples]),
@@ -126,8 +149,13 @@ for rtype in reaction_types:
             "fourp": np.zeros([N_T, 1]),
             "higher": np.zeros([N_T, 1])}
     
+    process_label[rtype] = {}
+    unit_label[rtype] = {}
+    
 full_rate['StepExcitation'] = {}
 nom_rate['StepExcitation'] = {}
+process_label['StepExcitation'] = {}
+unit_label['StepExcitation'] = {}
 for rate_i in lumped_rates:
     for rate_j in lumped_rates:
         if rate_i == rate_j:
@@ -155,16 +183,22 @@ for rate in lumped_rates:
     for rtype in reaction_types:
         with h5.File("{0}/{1}_{2}.h5".format(nom_dir, rtype, rate), "r") as f:
             nom_rate[rtype][rate][:,0] = f["table"][:,1]
-
+            process_label[rtype][rate] = f.attrs["process"]
+            unit_label[rtype][rate] = f.attrs["rate units"]
 
 if "Ionization" in reaction_types:
-    with h5.File("{0}/Recombination_Ground.h5".format(nom_dir), "r") as f:
+    with h5.File("{0}/Ionization_Ground.h5".format(nom_dir), "r") as f:
         nom_rate["Ionization"]["Ground"][:,0] = f["table"][:,1]
+        process_label["Ionization"]["Ground"] = f.attrs["process"]
+        unit_label["Ionization"]["Ground"] = f.attrs["rate units"]
 
 if "Recombination" in reaction_types:
     with h5.File("{0}/Recombination_Ground.h5".format(nom_dir), "r") as f:
         nom_rate["Recombination"]["Ground"][:,0] = f["table"][:,1]
 
+# override
+process_label["Recombination"]["Ground"] = 'Ar+ + e + e -> Ar(Ground) + e'
+unit_label["Recombination"]["Ground"] = 'm^6 / mol^2 / s'
 
 # Step Excitation
 for rate_i in lumped_rates:
@@ -176,7 +210,8 @@ for rate_i in lumped_rates:
 
         with h5.File("{0}/{1}_{2}_{3}.h5".format(nom_dir, 'StepExcitation', rate_i, rate_j), "r") as f:
             nom_rate['StepExcitation'][rname][:,0] = f["table"][:,1]
-
+            process_label['StepExcitation'][rname] = f.attrs["process"]
+            unit_label['StepExcitation'][rname] = f.attrs["rate units"]
 # breakpoint()
 # Read results back
 c = {}
@@ -191,16 +226,16 @@ for s_data in sample_labels:
             for rtype in reaction_types:
                 with h5.File("{0}/{1}_{2}.h5".format(o_name, rtype, rate), "r") as f:
                     full_rate[rtype][rate][:,c_f] = f["table"][:,1]
+                    
 
 
         if "Ionization" in reaction_types:
-            with h5.File("{0}/Recombination_Ground.h5".format(o_name), "r") as f:
-                full_rate["Ionization"]["Ground"][:,c_f] = f["table"][:,1]
+            with h5.File("{0}/Ionization_Ground.h5".format(o_name), "r") as f:
+                full_rate["Ionization"]["Ground"][:,c_f] = f["table"][:,1]           
 
         if "Recombination" in reaction_types:
             with h5.File("{0}/Recombination_Ground.h5".format(o_name), "r") as f:
                 full_rate["Recombination"]["Ground"][:,c_f] = f["table"][:,1]
-
 
         # Step Excitation
         for rate_i in lumped_rates:
@@ -212,65 +247,61 @@ for s_data in sample_labels:
 
                 with h5.File("{0}/{1}_{2}_{3}.h5".format(o_name, 'StepExcitation', rate_i, rate_j), "r") as f:
                     full_rate['StepExcitation'][rname][:,c_f] = f["table"][:,1]
-
+                    
                     # if rate_i == 'fourp' and rate_j == 'higher':
                         # breakpoint()
         c[s_data] += 1
         c_f += 1
         o_name = sample_dir + "sig_{0}_{1:06d}/rates".format(s_data, c[s_data])
 
+
+
+
 # breakpoint()
+
 # rate sample plots
 
+if make_plots:
 
-# Constants
-qe = spc.e    # 1.60217663e-19 [C]
-kB = spc.k    # 1.380649e-23 [J/K]
-NA = spc.N_A  # 6.022e23 [#/mol]
-eV = qe/kB    # 11604.518 [K / eV]
-# temp grid
-T_Maxw = np.linspace(0.02, 2, 512) * eV
+    upto = -1
+    # upto = 50
+    for s_data in sample_labels:
 
-# upto = 512
-upto = 50
-for s_data in sample_labels:
+        for ptype in reaction_types_full:
+            for rname in full_rate[ptype].keys():
+                
+                # if ptype == 'Ionization' and rname == 'meta':
+                #     breakpoint()
+                # ptype = "Excitation"
+                # prate = "meta"
 
-    for ptype in reaction_types_full:
-        for rname in full_rate[ptype].keys():
-            
-            # if ptype == 'Ionization' and rname == 'meta':
-            #     breakpoint()
-            # ptype = "Excitation"
-            # prate = "meta"
+                Nind = np.random.choice(c[s_data], Ndraw,  replace=False)
 
-            Nind = np.random.choice(c[s_data], Ndraw,  replace=False)
+                y_T = full_rate[ptype][rname][:,Nind][:upto,:]
+                y_B = full_rate[ptype][rname][:,crashed_runs][:upto,:]
+                y_N = nom_rate[ptype][rname][:,0][:upto]
+                # y_E = []
+                # for i in up_to:
+                #     y_E.append(mean[ptype][prate] + np.dot(scores[ptype][prate][:i, s], eigvec[ptype][prate][:,:i].T))
+                # y_M = mean[ptype][prate]
 
-            y_T = full_rate[ptype][rname][:,Nind][:upto,:]
-            y_N = nom_rate[ptype][rname][:,0][:upto]
-            # y_E = []
-            # for i in up_to:
-            #     y_E.append(mean[ptype][prate] + np.dot(scores[ptype][prate][:i, s], eigvec[ptype][prate][:,:i].T))
-            # y_M = mean[ptype][prate]
+                plt.plot([], [], label = "Samples",  color='r', alpha = 0.5)
+                plt.plot(T_Maxw[:upto], y_T, color='r', alpha = 0.5)
+                plt.plot([], [], label = "Crashed",  color='b', alpha = 1.0)
+                plt.plot(T_Maxw[:upto], y_B, color='b', alpha = 1.0)
+                plt.plot(T_Maxw[:upto], y_N, label="Nominal")
+                # for i in range(len(up_to)):
+                #     plt.plot(T_Maxw, y_E[i], label=f"Sample {s} (KL {up_to[i]})")
 
-            plt.plot([], [], label = "Samples",  color='r', alpha = 0.5)
-            plt.plot(T_Maxw[:upto], y_T, color='r', alpha = 0.5)
-            plt.plot(T_Maxw[:upto], y_N, label="Nominal")
-            # for i in range(len(up_to)):
-            #     plt.plot(T_Maxw, y_E[i], label=f"Sample {s} (KL {up_to[i]})")
+                plt.xlabel(rf"$T$ [K]")
+                plt.ylabel(rf"$k_f$ [m$^3$ / mol / s]")
+                plt.yscale('log')
+                plt.grid()
+                plt.legend()
+                plt.savefig(res_dir + f"plots/argon-{ptype}-{rname}-samples.pdf", bbox_inches='tight')
+                plt.clf()
 
-            plt.xlabel(rf"$T$ [K]")
-            plt.ylabel(rf"$k_f$ [m$^3$ / mol / s]")
-            plt.yscale('log')
-            plt.grid()
-            plt.legend()
-            plt.savefig(res_dir + f"plots/argon-{ptype}-{rname}-samples.pdf", bbox_inches='tight')
-            plt.clf()
-
-
-
-breakpoint()
-
-
+    breakpoint()
 
 
 # now compute PCA and assemble scores
@@ -295,6 +326,38 @@ for rtype in reaction_types:
             mean[rtype]["Ground"], eigval[rtype]["Ground"], eigvec[rtype]["Ground"], scores[rtype]["Ground"] = estimateCovarianceEig(full_rate[rtype]["Ground"])
         except:
             mean[rtype]["Ground"], eigval[rtype]["Ground"], eigvec[rtype]["Ground"], scores[rtype]["Ground"] = None, None, None, None
+
+# stepwise excitation
+rtype = "StepExcitation"
+mean[rtype] = {}
+eigval[rtype] = {}
+eigvec[rtype] = {}
+scores[rtype] = {}
+for rate_i in lumped_rates:
+    for rate_j in lumped_rates:
+        if rate_i == rate_j:
+            continue
+
+        rate = f'{rate_i}_{rate_j}'
+
+        mean[rtype][rate], eigval[rtype][rate], eigvec[rtype][rate], scores[rtype][rate] = estimateCovarianceEig(full_rate[rtype][rate])# breakpoint()
+
+# write the mean rates to a directory for later use
+
+for rtype in reaction_types_full:
+    for rate in mean[rtype].keys():
+        table = np.zeros((T_Maxw.shape[0], 2))
+        fname = os.path.join(mean_dir,  rtype + '_' + rate + '.h5')
+        table[:,0] = T_Maxw[:]
+        table[:,1] = mean[rtype][rate]
+        with h5.File(fname, 'w') as f:
+            f.attrs['process'] = process_label[rtype][rate]
+            f.attrs['temperature units'] = 'K'
+            f.attrs['rate units'] = unit_label[rtype][rate]
+            dset = f.create_dataset("table", table.shape, data=table)
+
+
+
 
 # reassemble scores in SampleData objects
 # rate_pc_samples = {"A": SampleData(categories=lumped_rates, sizes=pc_sizes),
@@ -340,38 +403,6 @@ for rtype in reaction_types:
 
 # breakpoint()
 
-######### Test Plots
-
-
-
-# temp grid
-T_Maxw = np.linspace(0.02, 2, 512) * eV
-
-ptype = "Excitation"
-prate = "meta"
-
-# check that KL model reproduces well
-up_to = [1,2,3,4]
-s = 10
-
-y_T = full_rate[ptype][prate][:,s]
-y_E = []
-for i in up_to:
-    y_E.append(mean[ptype][prate] + np.dot(scores[ptype][prate][:i, s], eigvec[ptype][prate][:,:i].T))
-y_M = mean[ptype][prate]
-
-plt.plot(T_Maxw, y_M, label="Mean")
-plt.plot(T_Maxw, y_T, label=f"Sample {s} (Orig)")
-for i in range(len(up_to)):
-    plt.plot(T_Maxw, y_E[i], label=f"Sample {s} (KL {up_to[i]})")
-
-plt.xlabel(rf"$T$ [K]")
-plt.ylabel(rf"$k_f$ [m$^3$ / mol / s]")
-plt.grid()
-plt.legend()
-plt.savefig(res_dir + f"plots/argon-{ptype}-{prate}-sample-{s}-KL.pdf", bbox_inches='tight')
-
-breakpoint()
 
 
 
@@ -387,7 +418,7 @@ with open(res_dir + "/eigvec.pickle", 'wb') as f:
 with open(res_dir + "/scores.pickle", 'wb') as f:
     pickle.dump(scores ,f)
 with open(res_dir + "/frac.pickle", 'wb') as f:
-    pickle.dump(scores ,f)
+    pickle.dump(frac ,f)
 with open(res_dir + "/r1.pickle", 'wb') as f:
     pickle.dump(r1 ,f)
 with open(res_dir + "/r2.pickle", 'wb') as f:
@@ -398,8 +429,5 @@ with open(res_dir + "/r2.pickle", 'wb') as f:
 
 
 
-#TODO TODO TODO TODO TODO TODO
-######### Look at Ionization rates - Done
-######### Group Indices by Electron Config and 
-######### Save useful results to discuss on Wed
+
 

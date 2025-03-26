@@ -142,7 +142,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Ionization_Ground.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 2: 3 body recombination to ground  ##########################
   - equation: Ar+ + E + E => Ar + E
@@ -150,7 +150,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Recombination_Ground.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 3: ionization from metastable  ##########################
   - equation: Arm + E => Ar+ + E + E
@@ -158,7 +158,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Ionization_meta.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 4: 3 body recombination to metastable  ##########################
   - equation: Ar+ + E + E => Arm + E
@@ -166,7 +166,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Recombination_meta.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 5: excitation from ground to metastable  ##########################
   - equation: Ar + E => Arm + E
@@ -174,7 +174,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Excitation_meta.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 6: de-excitation from metastable  ##########################
   - equation: Arm + E => Ar + E
@@ -182,7 +182,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Deexcitation_meta.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 7: Ionization from resonance ##########################
   - equation: Arr + E => Ar+ + E + E
@@ -190,7 +190,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Ionization_res.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 8: 3 body recombination to resonance ##########################
   - equation: Ar+ + E + E => Arr + E
@@ -198,7 +198,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Recombination_res.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 9: Excitation to resonance ##########################
   - equation: Ar + E => Arr + E
@@ -206,7 +206,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Excitation_res.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 10: de-excitation from resonance ##########################
   - equation: Arr + E => Ar + E
@@ -214,7 +214,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Deexcitation_res.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 11: Ionization from 4p ##########################
   - equation: Arp + E => Ar+ + E + E
@@ -222,7 +222,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Ionization_fourp.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 12: 3 body recombination to 4p  ##########################
   - equation: Ar+ + E + E => Arp + E
@@ -230,7 +230,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Recombination_fourp.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 13: Excitation to 4p ##########################
   - equation: Ar + E => Arp + E
@@ -238,7 +238,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Excitation_fourp.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 14: De-excitation from 4p ##########################
   - equation: Arp + E => Ar + E
@@ -246,7 +246,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Deexcitation_fourp.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 15: Ionization from higher lying ##########################
   - equation: Arh + E => Ar+ + E + E
@@ -254,7 +254,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Ionization_higher.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 16: 3 body recombination to 4p  ##########################
   - equation: Ar+ + E + E => Arh + E
@@ -262,7 +262,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Recombination_higher.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 17: Excitation to higher ##########################
   - equation: Ar + E => Arh + E
@@ -270,7 +270,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Excitation_higher.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 18: De-excitation from 4p ##########################
   - equation: Arh + E => Ar + E
@@ -278,7 +278,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/Deexcitation_higher.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 19: Stepwise excitation m to r ##########################
   - equation: Arm + E => Arr + E
@@ -286,7 +286,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_meta_res.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 20: Stepwise excitation r to m ##########################
   - equation: Arr + E => Arm + E
@@ -294,7 +294,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_res_meta.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 21: Stepwise excitation m to p ##########################
   - equation: Arm + E => Arp + E
@@ -302,7 +302,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_meta_fourp.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 22: Stepwise excitation p to m ##########################
   - equation: Arp + E => Arm + E
@@ -310,7 +310,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_fourp_meta.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 23: Stepwise excitation m to h ##########################
   - equation: Arm + E => Arh + E
@@ -318,7 +318,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_meta_higher.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 24: Stepwise excitation h to m ##########################
   - equation: Arh + E => Arm + E
@@ -326,7 +326,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_higher_meta.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 25: Stepwise excitation r to p ##########################
   - equation: Arr + E => Arp + E
@@ -334,7 +334,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_res_fourp.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 26: Stepwise excitation p to r ##########################
   - equation: Arp + E => Arr + E
@@ -342,7 +342,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_fourp_res.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 27: Stepwise excitation r to h ##########################
   - equation: Arr + E => Arh + E
@@ -350,7 +350,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_res_higher.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 28: Stepwise excitation h to r ##########################
   - equation: Arh + E => Arr + E
@@ -358,7 +358,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_higher_res.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 29: Stepwise excitation p to h ##########################
   - equation: Arp + E => Arh + E
@@ -366,7 +366,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_fourp_higher.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
   # Rxn 30: Stepwise excitation h to p ##########################
   - equation: Arh + E => Arp + E
@@ -374,7 +374,7 @@ reactions:
     table:
       filename: trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/StepExcitation_higher_fourp.h5
       x_logscale: false
-      y_logscale: false
+      y_logscale: true
       interpolation: true
 
 # collisions

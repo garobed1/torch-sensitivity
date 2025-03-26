@@ -12,14 +12,20 @@ samples in .h5 format
 title = "torch1d-propagation-dev"
 
 home = os.environ["HOME"]
+
+# NOW AT r6_3
+# NOW AT r7
 # template_file = "torch1d_argon_sample_config_template.yml"
-template_file = f"{home}/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/axial_icp_torch.yml"
+# template_file = f"{home}/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/axial_icp_torch.yml"
+template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml"
 # sample_dir = f"{home}/bedonian1/cross_section_samples_r1/"
 # sample_dir = f"{home}/bedonian1/cross_section_samples_r3/"
-sample_dir = f"{home}/bedonian1/cross_section_samples_r6/"
+sample_dir = f"{home}/bedonian1/cross_section_samples_r7/"
+# sample_dir = f"{home}/bedonian1/cross_section_samples_r6/"
 # output_dir = f"{home}/bedonian1/torch1d_samples_r1/"
 
-output_dir = f"{home}/bedonian1/torch1d_samples_r6/"
+# output_dir = f"{home}/bedonian1/torch1d_samples_r6_3/"
+output_dir = f"{home}/bedonian1/torch1d_samples_r7/"
 # output_dir = f"{home}/bedonian1/torch1d_samples_r3_no_4p_to_h/"
 # output_dir = f"{home}/bedonian1/torch1d_samples_r3_no_4p_to_h_dt/"
 
@@ -178,6 +184,3 @@ for sample in samples:
         yaml.safe_dump(template, f)
 
     
-
-# TODO: Get the test case from Todd and reset the template to pull from that data, meshes, etc.
-# otherwise this works
