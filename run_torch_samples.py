@@ -2,6 +2,7 @@ import os
 import yaml
 from subprocess import run
 from mpi4py import MPI
+import sys
 
 from sample_utils import *
 
@@ -28,10 +29,13 @@ home = os.environ["HOME"]
 # sample_dir = f"{home}/bedonian1/torch1d_samples_r3_no_4p_to_h"
 # sample_dir = f"{home}/bedonian1/torch1d_samples_r3_no_4p_to_h_dt"
 # sample_dir = f"{home}/bedonian1/torch1d_samples_r6_3" # initial state evolved from the mean of all rate samples after 0.015 s, to 0.115 s
-sample_dir = f"{home}/bedonian1/torch1d_samples_r7" # initial state evolved from the mean of all rate samples after 0.015 s, to 0.115 s
+sample_dir = f"{home}/bedonian1/torch1d_samples_r7_1" # initial state evolved from the mean of all rate samples after 0.015 s, to 0.115 s
 # template_file = f"{home}/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/axial_icp_torch.yml" # keep this to deal with restarts
 # template_file = f"{home}/bedonian1/nominal_r6/torch1d_input_r.yml" # keep this to deal with restarts
 template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml" # keep this to deal with restarts
+
+if len(sys.argv) > 1:
+    sample_dir = sys.argv[1]
 
 # fstep_over = None
 fstep_over = 70000 #override, this should be the final time step

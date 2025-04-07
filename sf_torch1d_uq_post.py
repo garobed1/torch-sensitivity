@@ -19,15 +19,25 @@ Script to perform post-processing of torch1d cases for one fidelity level
 
 home = os.getenv('HOME')
 
-sample_in_dir = home + "/bedonian1/cross_section_samples_r7/"
+# sample_in_dir = home + "/bedonian1/cross_section_samples_r7/"
 sample_out_dir = home + "/bedonian1/torch1d_samples_r7/"
+# sample_out_dir = home + "/bedonian1/torch1d_resample_r7/"
 template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml" # keep this to deal with restarts
 infile_name = "/torch1d_input.yml"
 res_dir = home + "/bedonian1/torch1d_post_r7/"
+# res_dir = home + "/bedonian1/torch1d_re_post_r7/"
+
+if len(sys.argv) > 2:
+    sample_out_dir = sys.argv[1]
+    res_dir = sys.argv[2]
 
 out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'heat_dep']
 
+# use this state as the "final" time step
 fstep = 70000 
+
+# if true, skip cases that haven't reached the final time step
+skip_incomplete = True
 
 plt.rcParams.update({
     "text.usetex": True,
@@ -36,10 +46,14 @@ plt.rcParams.update({
     "font.size": 15,
 })
 
+# size = 3
 clist = os.listdir(sample_out_dir)
+# breakpoint()
+clist.sort()
 N = len(clist)
-make_plots = True
-cases = divide_cases(N, size)
+make_plots = False
+# cases = divide_cases(N, size)
+cases = np.array_split(np.arange(N), size)
 
 qoi_sizes = {
     'exit_p': 1, 
@@ -47,12 +61,18 @@ qoi_sizes = {
     'exit_v': 1,
     'exit_T': 2,
     'exit_X': 5,
-    'heat_dep':, 1
+    'heat_dep': 1
 }
-
+qoi_val_r = {}
 qoi_val = {}
+mpi_sizes = {}
+mpi_offsets = {}
 for qoi in out_qoi:
-    qoi_val[qoi] = np.zeros([len(cases[rank]), qoi_sizes[qoi]])
+    mpi_sizes[qoi] = [cases[x].shape[0]*qoi_sizes[qoi] for x in range(size)]
+    # mpi_offsets[qoi] = [0] + [cases[x].shape[0]*qoi_sizes[qoi] for x in range(size-1)]
+    mpi_offsets[qoi] = [0] + np.cumsum(mpi_sizes[qoi][:-1]).tolist()
+    qoi_val_r[qoi] = np.zeros([len(cases[rank]), qoi_sizes[qoi]])
+
 
 if rank == 0:
     if not os.path.isdir(res_dir):
@@ -62,15 +82,16 @@ if rank == 0:
 
 c = 0
 for c_ind in cases[rank]:
+# for c_ind in [1]:
 
     c_dir = sample_out_dir + '/' + clist[c_ind]
     c_inf = c_dir + infile_name
     r_dir = res_dir + '/' + clist[c_ind]
 
-    if not os.path.isdir(r_dir):
+    if make_plots and not os.path.isdir(r_dir):
         os.makedirs(r_dir)
 
-    if not os.path.isdir(r_dir + '/plots'):
+    if make_plots and not os.path.isdir(r_dir + '/plots'):
         os.makedirs(r_dir + '/plots')
 
     args = inputs.parser.parse_args([c_inf])
@@ -81,23 +102,35 @@ for c_ind in cases[rank]:
     solverType = config.getInput(['system','type'], fallback='axial-torch')
     solverDict = {'axial-torch': AxialTorch}
 
-    solverType = config.getInput(['system','type'], fallback='axial-torch')
+    # solverType = config.getInput(['system','type'], fallback='axial-torch')
     solver = solverDict[solverType](config)
     print(solver.state.__dict__.keys())
     nVel = solver.state.nVel
 
     nt0 = solver.state.timestep
 
-    # set up residual
+    # breakpoint()
+
+    # set up residual, and get "final" time step
+    from os.path import exists
+    rf = None
     Nr = divmod(solver.timeIntegrator.Nt, solver.outputFrequency)[0]
     filenames = []
     for r in range(Nr+1):
         filenames += ['%s/%s-%08d.h5' % (solver.outputDir, solver.prefix, nt0 + r * solver.outputFrequency)]
-    from os.path import exists
+        
+        if nt0 + r * solver.outputFrequency == fstep and exists(filenames[-1]): 
+            rf = r + 0
+    # breakpoint()
     crashFile = '%s/%s.crashed.h5' % (solver.outputDir, solver.prefix)
     if (exists(crashFile)):
         filenames += [crashFile]
         Nr += 1
+
+    if rf is None and skip_incomplete:
+        continue
+    elif rf is None and not skip_incomplete:
+        rf = -1
 
     hist = np.zeros([Nr+1, solver.grid.Nx, solver.state.nUnknowns])
     dt = solver.timeIntegrator.dt
@@ -187,17 +220,17 @@ for c_ind in cases[rank]:
             ndots[r] = np.matmul(chem.creationStoich.T, rxn[r] - rxnb[r])
 
     if "exit_p" in out_qoi:
-        qoi_val["exit_p"][c, :] = hist[-1][-1,0]
+        qoi_val_r["exit_p"][c, :] = hist[rf][-1,0]
     if "exit_d" in out_qoi:
-        qoi_val["exit_d"][c, :] = [rho[-1][-1], hist[-1][-1,-1]*1e5]
+        qoi_val_r["exit_d"][c, :] = [rho[rf][-1], hist[rf][-1,-1]*1e5]
     if "exit_v" in out_qoi:
-        qoi_val["exit_v"][c, :] = vel[-1][-1,-1]
+        qoi_val_r["exit_v"][c, :] = vel[rf][-1,-1]
     if "exit_T" in out_qoi:
-        qoi_val["exit_T"][c, :] = [Th[-1], Te[-1]]
+        qoi_val_r["exit_T"][c, :] = [Th[rf][-1], Te[rf][-1]]
     if "exit_X" in out_qoi:
-        qoi_val["exit_X"][c, :] = Xsp[-1][-1,2:7]
+        qoi_val_r["exit_X"][c, :] = Xsp[rf][-1,2:7]
     if "heat_dep" in out_qoi:
-        qoi_val["heat_dep"][c, :] = plasmaPower[-1] * 1e-3
+        qoi_val_r["heat_dep"][c, :] = plasmaPower[rf] * 1e-3
 
     ######
     # NOTE NOTE NOTE LEFT OFF HERE, CONTINUE WITH SAMPLER OBJECT DUMP
@@ -342,10 +375,10 @@ for c_ind in cases[rank]:
             return
 
         # NOTE: looking at last timestep for now
-        testF(-1)
+        testF(rf)
         # breakpoint()
         print("Maximum Electron Temperature")
-        print(np.amax(Te[-1]))
+        print(np.amax(Te[rf]))
         # testT = np.linspace(300, 11000, 500)
         # testT = Th[0]
         # ne = necSrc.nec.var(testT)
@@ -363,21 +396,21 @@ for c_ind in cases[rank]:
         
     
 
-    filename = r_dir +  "/Torch1D.radius.txt"
-    data = np.array([solver.grid.xg, solver.grid.radius]).T
-    np.savetxt(filename, data)
+    # filename = r_dir +  "/Torch1D.radius.txt"
+    # data = np.array([solver.grid.xg, solver.grid.radius]).T
+    # np.savetxt(filename, data)
 
-    filename = r_dir + "/Torch1D.temperature.txt"
-    data = np.array([solver.grid.xg, Th[-1], Te[-1]]).T
-    np.savetxt(filename, data)
+    # filename = r_dir + "/Torch1D.temperature.txt"
+    # data = np.array([solver.grid.xg, Th[-1], Te[-1]]).T
+    # np.savetxt(filename, data)
 
-    filename = r_dir + "/Torch1D.mole_fraction.txt"
-    data = np.array([solver.grid.xg] + [Xsp[-1][:,k] for k in range(solver.state.nSpecies)]).T
-    np.savetxt(filename, data)
+    # filename = r_dir + "/Torch1D.mole_fraction.txt"
+    # data = np.array([solver.grid.xg] + [Xsp[-1][:,k] for k in range(solver.state.nSpecies)]).T
+    # np.savetxt(filename, data)
 
-    filename = r_dir + "/Torch1D.power.txt"
-    data = np.array([solver.grid.xg, heat[-1] * area, wall[-1] * area, nec[-1] * area]).T
-    np.savetxt(filename, data)
+    # filename = r_dir + "/Torch1D.power.txt"
+    # data = np.array([solver.grid.xg, heat[-1] * area, wall[-1] * area, nec[-1] * area]).T
+    # np.savetxt(filename, data)
     # breakpoint()
 
 
@@ -463,3 +496,24 @@ for c_ind in cases[rank]:
 
 
     c += 1
+
+
+for qoi in out_qoi:
+    qoi_val[qoi] = np.zeros([N, qoi_sizes[qoi]])
+    # breakpoint()
+    comm.Gatherv(qoi_val_r[qoi], [qoi_val[qoi], mpi_sizes[qoi], mpi_offsets[qoi], MPI.DOUBLE],  root=0)
+    # comm.Gatherv(qoi_val_r[qoi], [qoi_val[qoi], mpi_sizes, mpi_offsets],  root=0)
+
+import pickle
+filename = res_dir + '/qoi_samples.pickle' 
+
+if rank == 0:
+    with open(filename, 'wb') as f:
+
+        pickle.dump(qoi_val, f)
+
+    with open(res_dir + '/qoi_list.pickle', 'wb') as f:
+
+        pickle.dump(out_qoi, f)
+
+# breakpoint()

@@ -1,50 +1,37 @@
 import os
-import yaml
+# import yaml
+import configparser
 
 """
-Script to produce torch1d input files from reaction rate sample data
+Script to produce tps input files from reaction rate sample data
 
 Options include a template input file and a directory containing the rate
-samples in .h5 format
+samples in .h5 format, same as torch1d
+
 
 """
 
 
 home = os.environ["HOME"]
 
-# NOW AT r6_3
-# NOW AT r7
-# template_file = "torch1d_argon_sample_config_template.yml"
-# template_file = f"{home}/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/axial_icp_torch.yml"
-template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml"
-# sample_dir = f"{home}/bedonian1/cross_section_samples_r1/"
-# sample_dir = f"{home}/bedonian1/cross_section_samples_r3/"
-# sample_dir = f"{home}/bedonian1/cross_section_samples_r7_1/"
+# template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml"
+template_file = f"{home}/bedonian1/mean_tps2d_r6/tps2d_input_r.yml"
 sample_dir = f"{home}/bedonian1/rate_resample_r7/"
-# sample_dir = f"{home}/bedonian1/cross_section_samples_r6/"
-# output_dir = f"{home}/bedonian1/torch1d_samples_r1/"
-
-# output_dir = f"{home}/bedonian1/torch1d_samples_r6_3/"
-# output_dir = f"{home}/bedonian1/torch1d_samples_r7_1/"
 output_dir = f"{home}/bedonian1/torch1d_resample_r7/"
-# output_dir = f"{home}/bedonian1/torch1d_samples_r3_no_4p_to_h/"
-# output_dir = f"{home}/bedonian1/torch1d_samples_r3_no_4p_to_h_dt/"
 
-no4phigher = False
 
-#TODO: fix this, find the formation energies of each
 formation_energy = {'Ar*': 1.114e6, # full lumped excited
-                    'Ar+': 1.521e6, # ionized
-                    'Arm': 1116419.84847284, # metastable 4s
-                    'Arr': 1129622.58232383, # resonant 4s
-                    'Arp': 1267887.18783722, # 4p
-                    'Arh': 1393459.40561185 # higher
+                    'Ar.+1': 1.521e6, # ionized
+                    'Ar_m': 1116419.84847284, # metastable 4s
+                    'Ar_r': 1129622.58232383, # resonant 4s
+                    'Ar_p': 1267887.18783722, # 4p
+                    'Ar_h': 1393459.40561185 # higher
 }
 
-name_to_species = {'meta':'Arm',
-                   'res':'Arr',
-                   'fourp':'Arp',
-                   'higher':'Arh',
+name_to_species = {'meta':'Ar_m',
+                   'res':'Ar_r',
+                   'fourp':'Ar_p',
+                   'higher':'Ar_h',
                    'Ground':'Ar'
                    }
 
@@ -55,10 +42,10 @@ def deexcitation_eq(name, name2):
     return name_to_species[name] + ' + E => Ar + E'
 
 def ionization_eq(name, name2):
-    return name_to_species[name] + ' + E => Ar+ + E + E'
+    return name_to_species[name] + ' + E => Ar.+1 + E + E'
 
 def recombination_eq(name, name2):
-    return 'Ar+ + E + E => ' + name_to_species[name] + ' + E'
+    return 'Ar.+1 + E + E => ' + name_to_species[name] + ' + E'
 
 def stepexcitation_eq(name, name2):
     return name_to_species[name] + ' + E => ' + name_to_species[name2] + ' + E'
@@ -72,8 +59,11 @@ reaction_eq_dict = {
 }
 
 ######### Open Template
+
+template = configparser.ConfigParser()
 with open(template_file) as f:
-    template = yaml.safe_load(f)
+    template.readfp(f)
+    # template = yaml.safe_load(f)
 
 ######### Create Output Dir
 if not os.path.isdir(output_dir):
@@ -134,6 +124,8 @@ for sample in samples:
     if template['reactions'] is None:
         template['reactions'] = []
 
+    re_list = [template['reactions'][i]['equation'] for i in range(len(template['reactions']))]
+
     for rate in rates:
 
         rate_split = rate.split('.')[0].split('_')
@@ -143,7 +135,6 @@ for sample in samples:
         if len(rate_split) == 3:
             r2 = rate_split[2]
 
-        re_list = [template['reactions'][i]['equation'] for i in range(len(template['reactions']))]
 
         # check if reaction is accounted for
         reaction_name = reaction_eq_dict[rtype](r1, r2)

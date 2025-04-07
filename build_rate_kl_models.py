@@ -14,20 +14,29 @@ from pca_tools import *
 home = os.getenv('HOME')
 # sample_dir = home + "/torch-chemistry/argon/results/cross_section_samples_r3/"
 # sample_dir = home + "/bedonian1/cross_section_samples_r6/"
-sample_dir = home + "/bedonian1/cross_section_samples_r7/"
+# sample_dirs = [home + "/bedonian1/cross_section_samples_r7/"]
+sample_dirs = [home + "/bedonian1/cross_section_samples_r7/", home + "/bedonian1/cross_section_samples_r7_1/"]
 nom_dir = home + "/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/"
 # res_dir = "results/cross_section_samples_r3/"
 # res_dir = "results/cross_section_samples_r6_3/"
-res_dir = "results/cross_section_samples_r7/"
+res_dir = "results/rate_resample_r7/"
 
 mean_dir = home + "/bedonian1/mean_r6/"
 
+log_model = True
+indep_approach = False
 """
 Without performing sensitivity analysis, simply build KL expansions of the rate 
 samples
 
-NOTE NOTE NOTE: Check notes to see where I left off
+Since forward and backward rates are correlated, we take a multiple uncorrelated KL
+(muKL) approach to obtain simultaneous representations for both with a single sample
+of KL parameter scores
 
+Cite H Cho (2013) for muKL approach
+
+NOTE: For frac, define as spectrum eigval_k * ||eigvec^{f or b}_k ||^2_2
+Check fraction for forward and backward separately, e.g.
 """
 
 # number of principal components to examine in sensitivity analysis
@@ -47,13 +56,20 @@ reaction_types_full = ['Excitation', 'Deexcitation', 'Ionization', 'Recombinatio
 # crashed_runs =[30, 76, 232, 370, 416, 444, 453, 526, 535, 592, 618, 703, 839, 1217, 1229, 1234, 1302, 1373, 1569, 1721, 1857, 2032, 2254, 2466, 2805]
 crashed_runs = []
 
+# Pairings of forward and backward lumped rates
+reaction_pairs = [
+    ['Excitation', 'Deexcitation'],
+    ['Ionization', 'Recombination']
+    # ['StepExcitation', 'StepExcitation']
+]
+
 # Constants
 qe = spc.e    # 1.60217663e-19 [C]
 kB = spc.k    # 1.380649e-23 [J/K]
 NA = spc.N_A  # 6.022e23 [#/mol]
 eV = qe/kB    # 11604.518 [K / eV]
 # temp grid
-T_Maxw = np.linspace(0.02, 2, 512) * eV
+T_Maxw = np.linspace(0.02, 2, N_T) * eV
 
 
 # sample_labels = ["A", "B", "AB"]
@@ -68,6 +84,7 @@ if not os.path.isdir(res_dir):
 sample_exc = False
 sample_ion = False
 sample_step_exc = False
+sample_dir = sample_dirs[0]
 if os.path.exists(sample_dir + 'sig_A_000000/rates/Excitation_res.h5'):
     sample_exc = True
 if os.path.exists(sample_dir + 'sig_A_000000/rates/Ionization_res.h5'):
@@ -83,12 +100,17 @@ else:
 ######## Number of samples
 
 Nsamples = 0
-o_name = sample_dir + "sig_A_{0:06d}/rates".format(Nsamples)
-while os.path.isdir(o_name):
 
-    Nsamples += 1
-    o_name = sample_dir + "sig_A_{0:06d}/rates".format(Nsamples)
+for sample_dir in sample_dirs:
+    Nsf = 0
+    o_name = sample_dir + "sig_A_{0:06d}/rates".format(Nsf)
+    while os.path.isdir(o_name):
 
+        Nsamples += 1
+        Nsf += 1
+        o_name = sample_dir + "sig_A_{0:06d}/rates".format(Nsf)
+
+# breakpoint()
 ########
 lumped_rates = ["meta", "res", "fourp", "higher"]
 lumped_rates_g = ["meta", "res", "fourp", "higher", "Ground"]
@@ -215,47 +237,54 @@ for rate_i in lumped_rates:
 # breakpoint()
 # Read results back
 c = {}
-
-c_f = 0
-for s_data in sample_labels:
-
-    c[s_data] = 0
-    o_name = sample_dir + "sig_{0}_{1:06d}/rates".format(s_data, c[s_data])
-    while os.path.isdir(o_name) or c[s_data] < clim:
-        for rate in lumped_rates:
-            for rtype in reaction_types:
-                with h5.File("{0}/{1}_{2}.h5".format(o_name, rtype, rate), "r") as f:
-                    full_rate[rtype][rate][:,c_f] = f["table"][:,1]
-                    
-
-
-        if "Ionization" in reaction_types:
-            with h5.File("{0}/Ionization_Ground.h5".format(o_name), "r") as f:
-                full_rate["Ionization"]["Ground"][:,c_f] = f["table"][:,1]           
-
-        if "Recombination" in reaction_types:
-            with h5.File("{0}/Recombination_Ground.h5".format(o_name), "r") as f:
-                full_rate["Recombination"]["Ground"][:,c_f] = f["table"][:,1]
-
-        # Step Excitation
-        for rate_i in lumped_rates:
-            for rate_j in lumped_rates:
-                if rate_i == rate_j:
-                    continue
-
-                rname = f'{rate_i}_{rate_j}'
-
-                with h5.File("{0}/{1}_{2}_{3}.h5".format(o_name, 'StepExcitation', rate_i, rate_j), "r") as f:
-                    full_rate['StepExcitation'][rname][:,c_f] = f["table"][:,1]
-                    
-                    # if rate_i == 'fourp' and rate_j == 'higher':
-                        # breakpoint()
-        c[s_data] += 1
-        c_f += 1
-        o_name = sample_dir + "sig_{0}_{1:06d}/rates".format(s_data, c[s_data])
+if not os.path.exists(res_dir + "/full_rate.pickle"):
+    c_f = 0
+    for sample_dir in sample_dirs:
+        for s_data in sample_labels:
+            c[s_data] = 0
+            o_name = sample_dir + "sig_{0}_{1:06d}/rates".format(s_data, c[s_data])
+            while os.path.isdir(o_name) or c[s_data] < clim:
+                print(f"Reading Sample: {c_f}")
+                for rate in lumped_rates:
+                    for rtype in reaction_types:
+                        with h5.File("{0}/{1}_{2}.h5".format(o_name, rtype, rate), "r") as f:
+                            full_rate[rtype][rate][:,c_f] = f["table"][:,1]
+                            
 
 
+                if "Ionization" in reaction_types:
+                    with h5.File("{0}/Ionization_Ground.h5".format(o_name), "r") as f:
+                        full_rate["Ionization"]["Ground"][:,c_f] = f["table"][:,1]           
 
+                if "Recombination" in reaction_types:
+                    with h5.File("{0}/Recombination_Ground.h5".format(o_name), "r") as f:
+                        full_rate["Recombination"]["Ground"][:,c_f] = f["table"][:,1]
+
+                # Step Excitation
+                for rate_i in lumped_rates:
+                    for rate_j in lumped_rates:
+                        if rate_i == rate_j:
+                            continue
+
+                        rname = f'{rate_i}_{rate_j}'
+
+                        with h5.File("{0}/{1}_{2}_{3}.h5".format(o_name, 'StepExcitation', rate_i, rate_j), "r") as f:
+                            full_rate['StepExcitation'][rname][:,c_f] = f["table"][:,1]
+                            
+                            # if rate_i == 'fourp' and rate_j == 'higher':
+                                # breakpoint()
+                c[s_data] += 1
+                c_f += 1
+                o_name = sample_dir + "sig_{0}_{1:06d}/rates".format(s_data, c[s_data])
+
+
+
+    with open(res_dir + "/full_rate.pickle", 'wb') as f:
+        pickle.dump(full_rate ,f)
+
+else:
+    with open(res_dir + "/full_rate.pickle", 'rb') as f:
+        full_rate = pickle.load(f)
 
 # breakpoint()
 
@@ -303,60 +332,132 @@ if make_plots:
 
     breakpoint()
 
-
 # now compute PCA and assemble scores
 mean = {}
 eigval = {}
 eigvec = {}
 scores = {}
 
-for rtype in reaction_types:
+if indep_approach:
+
+
+    for rtype in reaction_types:
+        mean[rtype] = {}
+        eigval[rtype] = {}
+        eigvec[rtype] = {}
+        scores[rtype] = {}
+
+        # breakpoint()
+        for rate in lumped_rates:
+
+            work = full_rate[rtype][rate]
+            if log_model:
+                work = np.log(full_rate[rtype][rate])
+
+            mean[rtype][rate], eigval[rtype][rate], eigvec[rtype][rate], scores[rtype][rate] = estimateCovarianceEig(work)
+
+
+        if rtype == "Ionization" or rtype == "Recombination":
+            # try:
+            work = full_rate[rtype]["Ground"]
+            if log_model:
+                work = np.log(full_rate[rtype]["Ground"])
+            mean[rtype]["Ground"], eigval[rtype]["Ground"], eigvec[rtype]["Ground"], scores[rtype]["Ground"] = estimateCovarianceEig(work)
+            # except:
+            #     mean[rtype]["Ground"], eigval[rtype]["Ground"], eigvec[rtype]["Ground"], scores[rtype]["Ground"] = None, None, None, None
+
+    # stepwise excitation
+    rtype = "StepExcitation"
     mean[rtype] = {}
     eigval[rtype] = {}
     eigvec[rtype] = {}
     scores[rtype] = {}
+    for rate_i in lumped_rates:
+        for rate_j in lumped_rates:
+            if rate_i == rate_j:
+                continue
 
-    # breakpoint()
-    for rate in lumped_rates:
-        mean[rtype][rate], eigval[rtype][rate], eigvec[rtype][rate], scores[rtype][rate] = estimateCovarianceEig(full_rate[rtype][rate])
+            rate = f'{rate_i}_{rate_j}'
+
+            work = full_rate[rtype][rate]
+            if log_model:
+                work = np.log(full_rate[rtype][rate])
+
+            mean[rtype][rate], eigval[rtype][rate], eigvec[rtype][rate], scores[rtype][rate] = estimateCovarianceEig(work)# breakpoint()
+
+    # write the mean rates to a directory for later use
+
+    # for rtype in reaction_types_full:
+    #     for rate in mean[rtype].keys():
+    #         table = np.zeros((T_Maxw.shape[0], 2))
+    #         fname = os.path.join(mean_dir,  rtype + '_' + rate + '.h5')
+    #         table[:,0] = T_Maxw[:]
+    #         table[:,1] = mean[rtype][rate]
+    #         with h5.File(fname, 'w') as f:
+    #             f.attrs['process'] = process_label[rtype][rate]
+    #             f.attrs['temperature units'] = 'K'
+    #             f.attrs['rate units'] = unit_label[rtype][rate]
+    #             dset = f.create_dataset("table", table.shape, data=table)
+
+# muKL approach
+else:
+
+    for rpair in reaction_pairs:
+
+        rref = rpair[0]
+
+        mean[rref] = {}
+        eigval[rref] = {}
+        eigvec[rref] = {}
+        scores[rref] = {}
+
+        # breakpoint()
+        for rate in lumped_rates:
+
+            # Concatenate forward and backward rates
+            fwd_bkw = np.append(full_rate[rpair[0]][rate], full_rate[rpair[1]][rate], axis=0)
+            work = fwd_bkw
+            if log_model:
+                work = np.log(fwd_bkw)
+            mean[rref][rate], eigval[rref][rate], eigvec[rref][rate], scores[rref][rate] = estimateCovarianceEig(work)
 
 
-    if rtype == "Ionization" or rtype == "Recombination":
-        try:
-            mean[rtype]["Ground"], eigval[rtype]["Ground"], eigvec[rtype]["Ground"], scores[rtype]["Ground"] = estimateCovarianceEig(full_rate[rtype]["Ground"])
-        except:
-            mean[rtype]["Ground"], eigval[rtype]["Ground"], eigvec[rtype]["Ground"], scores[rtype]["Ground"] = None, None, None, None
+        if rref == "Ionization":
+            fwd_bkw = np.append(full_rate[rpair[0]]["Ground"], full_rate[rpair[1]]["Ground"], axis=0)
 
-# stepwise excitation
-rtype = "StepExcitation"
-mean[rtype] = {}
-eigval[rtype] = {}
-eigvec[rtype] = {}
-scores[rtype] = {}
-for rate_i in lumped_rates:
-    for rate_j in lumped_rates:
-        if rate_i == rate_j:
-            continue
-
-        rate = f'{rate_i}_{rate_j}'
-
-        mean[rtype][rate], eigval[rtype][rate], eigvec[rtype][rate], scores[rtype][rate] = estimateCovarianceEig(full_rate[rtype][rate])# breakpoint()
-
-# write the mean rates to a directory for later use
-
-for rtype in reaction_types_full:
-    for rate in mean[rtype].keys():
-        table = np.zeros((T_Maxw.shape[0], 2))
-        fname = os.path.join(mean_dir,  rtype + '_' + rate + '.h5')
-        table[:,0] = T_Maxw[:]
-        table[:,1] = mean[rtype][rate]
-        with h5.File(fname, 'w') as f:
-            f.attrs['process'] = process_label[rtype][rate]
-            f.attrs['temperature units'] = 'K'
-            f.attrs['rate units'] = unit_label[rtype][rate]
-            dset = f.create_dataset("table", table.shape, data=table)
+            work = fwd_bkw
+            if log_model:
+                fwd_bkw[0] = max(fwd_bkw[0,0], 1e-300)
+                work = np.log(fwd_bkw)
+                # breakpoint()
+            mean[rref]["Ground"], eigval[rref]["Ground"], eigvec[rref]["Ground"], scores[rref]["Ground"] = estimateCovarianceEig(work)
 
 
+    # stepwise excitation
+    rref = "StepExcitation"
+    mean[rref] = {}
+    eigval[rref] = {}
+    eigvec[rref] = {}
+    scores[rref] = {}
+    # for rate_i in lumped_rates:
+    for i in range(len(lumped_rates) - 1):
+        # for rate_j in lumped_rates:
+        for j in range(i, len(lumped_rates)):
+            rate_i = lumped_rates[i]
+            rate_j = lumped_rates[j]
+            if rate_i == rate_j:
+                continue
+
+            rate_fwd = f'{rate_i}_{rate_j}'
+            rate_bkw = f'{rate_j}_{rate_i}'
+
+            # Concatenate forward and backward rates
+            fwd_bkw = np.append(full_rate[rref][rate_fwd], full_rate[rref][rate_bkw], axis=0)
+
+            work = fwd_bkw
+            if log_model:
+                work = np.log(fwd_bkw)
+            mean[rref][rate_fwd], eigval[rref][rate_fwd], eigvec[rref][rate_fwd], scores[rref][rate_fwd] = estimateCovarianceEig(work)# breakpoint()
 
 
 # reassemble scores in SampleData objects
@@ -382,25 +483,90 @@ for rtype in reaction_types_full:
 #         rate_pc_samples[rtype][s_data].addData(dd)
 
 
+# NOTE: Update this, and the calculation
 # compute variance percentage too
 frac = {}
-r1 = {}
-r2 = {}
+# r1 = {}
+# r2 = {}
+if indep_approach:
 
-for rtype in reaction_types:
-    frac[rtype] = {}
-    r1[rtype] = {}
-    r2[rtype] = {}
+    for rtype in mean.keys():
+        frac[rtype] = {}
+        # r1[rtype] = {}
+        # r2[rtype] = {}
+    
+        lumped_rates_check = lumped_rates
+        if rtype == "Ionization" or rtype == "Recombination":  
+            lumped_rates_check = lumped_rates_g
+    
+        for rate in lumped_rates_check:
+            print("{0} Indices: ".format(rate))
+            frac[rtype][rate] = computeVarianceFractions(eigval[rtype][rate])
+            print(frac[rtype][rate])
 
-    lumped_rates_check = lumped_rates
-    if rtype == "Ionization" or rtype == "Recombination":  
-        lumped_rates_check = lumped_rates_g
+# muKL approach
+else:
 
-    for rate in lumped_rates_check:
-        print("{0} Indices: ".format(rate))
-        frac[rtype][rate] = computeVarianceFractions(eigval[rtype][rate])
-        print(frac[rtype][rate])
+    for rpair in reaction_pairs:
 
+        rref = rpair[0]
+        print(rref)
+        frac[rref] = {}
+        lumped_rates_check = lumped_rates
+        if rref == "Ionization":  
+            lumped_rates_check = lumped_rates_g
+
+        for rate in lumped_rates_check:
+            print("{0} Indices: ".format(rate))
+            frac[rref][rate] = []
+            frac[rref][rate].append(computeVarianceFractions(eigval[rref][rate])) # both fwd and bkw
+
+            # fwd spectrum
+            fwd_val = eigval[rref][rate] + 0.
+            for k in range(fwd_val.shape[0]):
+                fwd_val[k] *= np.linalg.norm(eigvec[rref][rate][k][:N_T])**2
+            frac[rref][rate].append(computeVarianceFractions(fwd_val))
+            
+            # bkw spectrum
+            bkw_val = eigval[rref][rate] + 0.
+            for k in range(bkw_val.shape[0]):
+                bkw_val[k] *= np.linalg.norm(eigvec[rref][rate][k][N_T:])**2
+            frac[rref][rate].append(computeVarianceFractions(bkw_val))
+
+            print(frac[rref][rate])
+
+    # stepwise excitation
+    rref = "StepExcitation"
+    print(rref)
+    frac[rref] = {}
+    for i in range(len(lumped_rates) - 1):
+        # for rate_j in lumped_rates:
+        for j in range(i, len(lumped_rates)):
+            rate_i = lumped_rates[i]
+            rate_j = lumped_rates[j]
+            if rate_i == rate_j:
+                continue
+
+            rate_fwd = f'{rate_i}_{rate_j}'
+            rate_bkw = f'{rate_j}_{rate_i}'
+            
+            print("{0} Indices: ".format(rate_fwd))
+            frac[rref][rate_fwd] = []
+            frac[rref][rate_fwd].append(computeVarianceFractions(eigval[rref][rate_fwd])) # both fwd and bkw
+
+            # fwd spectrum
+            fwd_val = eigval[rref][rate_fwd] + 0.
+            for k in range(fwd_val.shape[0]):
+                fwd_val[k] *= np.linalg.norm(eigvec[rref][rate_fwd][k][:N_T])**2
+            frac[rref][rate_fwd].append(computeVarianceFractions(fwd_val))
+            
+            # bkw spectrum
+            bkw_val = eigval[rref][rate_fwd] + 0.
+            for k in range(bkw_val.shape[0]):
+                bkw_val[k] *= np.linalg.norm(eigvec[rref][rate_fwd][k][N_T:])**2
+            frac[rref][rate_fwd].append(computeVarianceFractions(bkw_val))
+
+            print(frac[rref][rate_fwd])
 # breakpoint()
 
 
@@ -419,13 +585,17 @@ with open(res_dir + "/scores.pickle", 'wb') as f:
     pickle.dump(scores ,f)
 with open(res_dir + "/frac.pickle", 'wb') as f:
     pickle.dump(frac ,f)
-with open(res_dir + "/r1.pickle", 'wb') as f:
-    pickle.dump(r1 ,f)
-with open(res_dir + "/r2.pickle", 'wb') as f:
-    pickle.dump(r2 ,f)
+with open(res_dir + "/is_log.pickle", 'wb') as f: #KL on log of rates
+    pickle.dump(log_model ,f)
+with open(res_dir + "/is_indep.pickle", 'wb') as f: #separate 
+    pickle.dump(indep_approach ,f)
+# with open(res_dir + "/r1.pickle", 'wb') as f:
+#     pickle.dump(r1 ,f)
+# with open(res_dir + "/r2.pickle", 'wb') as f:
+#     pickle.dump(r2 ,f)
 
 
-# breakpoint()
+breakpoint()
 
 
 
