@@ -1,6 +1,7 @@
 import os
 import yaml
 from subprocess import run
+from file_util import t1dRestart
 from mpi4py import MPI
 import sys
 
@@ -10,6 +11,10 @@ from sample_utils import *
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
+
+
+
+
 
 
 """
@@ -39,10 +44,20 @@ if len(sys.argv) > 1:
 
 # fstep_over = None
 fstep_over = 70000 #override, this should be the final time step
-
 torch1d_exec = f"{home}/torch1d/torch1d.py"
 restart = True # enable restart from stopped state
 pcomm = 'python3.11'
+
+
+
+
+
+
+
+
+
+
+
 
 ######### Retrieve baseline information from template in case of restarts
 with open(template_file) as f:
@@ -72,13 +87,13 @@ for isamp in cases[rank]:
     # TODO: In each sample, detect which models to run
     # For now, just run torch1d based on yml file presence
 
-    dir = sample_dir + '/' + sample 
+    sdir = sample_dir + '/' + sample 
 
     run_torch1d = False
     # run_tps, etc.
 
     # check if there exists a yaml file (and read its contents)
-    for ifname in os.listdir(dir):
+    for ifname in os.listdir(sdir):
         if ifname.endswith('.yml'):
             run_torch1d = True
             torch1d_infile = ifname
@@ -87,51 +102,20 @@ for isamp in cases[rank]:
     
 
     # check if calculation already performed
-    if os.path.isdir(dir + '/output/'):
-        for fname in os.listdir(dir + '/output/'):
-            if fname.endswith(f'-{fstep:08d}.h5'): 
-                run_torch1d = False
-                break
-
-        # now check where the calculation stopped
-        if run_torch1d and len(os.listdir(dir + '/output/')):
-            with open(dir + '/' + torch1d_infile) as f:
-                torch1d_in = yaml.safe_load(f)
-
-            if restart:
-                cstep = 0
-                fname_s = prefix + '-00000000.h5'
-                for fname in os.listdir(dir + '/output/'):
-                    if not fname.endswith('crashed.h5'):
-                        cand = int(fname[-11:-3])
-                        if cand > cstep:
-                            cstep = cand
-                            fname_s = fname
-
-                # need to adjust the input file
-                fstep_s = fstep - cstep
-                ic_s = dir + '/output/' + fname_s
-
-                torch1d_in['time_integration']['number_of_timesteps'] = fstep_s
-                torch1d_in['state']['initial_condition'] = ic_s
-
-                torch1d_infile_r = 'r_' + torch1d_infile
-                with open(dir + '/' + torch1d_infile_r, 'w') as f:
-                    yaml.safe_dump(torch1d_in, f)
-
-        else:
-            torch1d_infile_r = torch1d_infile
+    if os.path.isdir(sdir + '/output/'):
+        torch1d_infile_r, run_torch1d = t1dRestart(sdir, fstep, torch1d_infile)
     else:
         torch1d_infile_r = torch1d_infile
+
     if run_torch1d:
         # for fname in os.listdir(dir):
         #     if fname.endswith('.yml'):
         #         torch1d_in = fname
 
         if restart:
-            inputfile = dir + '/' + torch1d_infile_r
+            inputfile = sdir + '/' + torch1d_infile_r
         else:
-            inputfile = dir + '/' + torch1d_infile
+            inputfile = sdir + '/' + torch1d_infile
         
 
         # run torch1d

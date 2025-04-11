@@ -23,16 +23,20 @@ by resampling KL models, then compute backward rates
 home = os.getenv('HOME')
 kl_model_dir = 'results/rate_resample_r7/'
 nom_dir = home + "/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/"
-res_dir = home + "/bedonian1/rate_resample_r7/"
+res_dir = home + "/bedonian1/test_spoof/"
 
 
 #### SAMPLING INPUTS ####
 # Generate some artificial distributions for every considered cross section
 # Nsamples = 8000
-Nsamples = 16000
+Nsamples = 12
 # Nsamples = 4
 
 N_T = 512
+# pc_threshold = 1.0 - 1.e-2 #coarse
+pc_threshold = 1.0 - 1.e-4 
+pc_proc = 0 # if muKL, 0 means both processes, 1 onward places threshold on that process' spectrum
+
 
 sample_react_dict = {
     "Excitation": True,
@@ -65,8 +69,7 @@ sfwd_to_bkw = {
 }
 
 # determine number of principal components/independent variables for each sample based on eigval threshold
-pc_threshold = 1.0 - 1.e-4
-pc_proc = 0 # if muKL, 0 means both processes, 1 onward places threshold on that process' spectrum
+# pc_threshold = 1.0 - 1.e-4
 
 #### END INPUTS ####
 

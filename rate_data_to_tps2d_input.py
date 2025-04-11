@@ -21,7 +21,7 @@ output_dir = f"{home}/bedonian1/torch1d_resample_r7/"
 
 
 formation_energy = {'Ar*': 1.114e6, # full lumped excited
-                    'Ar.+1': 1.521e6, # ionized
+                    'Ar.+1': 1520571.3883, # ionized
                     'Ar_m': 1116419.84847284, # metastable 4s
                     'Ar_r': 1129622.58232383, # resonant 4s
                     'Ar_p': 1267887.18783722, # 4p
@@ -35,6 +35,14 @@ name_to_species = {'meta':'Ar_m',
                    'Ground':'Ar'
                    }
 
+name_to_st = {
+    'meta':'1 0 0 0',
+    'res':'0 1 0 0',
+    'fourp':'0 0 1 0',
+    'higher':'0 0 0 1'
+}
+
+#Equation name
 def excitation_eq(name, name2):
     return 'Ar + E => ' + name_to_species[name] + ' + E'
 
@@ -49,6 +57,18 @@ def recombination_eq(name, name2):
 
 def stepexcitation_eq(name, name2):
     return name_to_species[name] + ' + E => ' + name_to_species[name2] + ' + E'
+
+
+#Stoichiometry
+def ground_st():
+    return '1 1 0 0 0 0 0'
+
+def excited_st(name):
+    return '0 1 ' + name_to_st[name] + ' 0'
+
+def ion_st():
+    return '0 2 0 0 0 0 1'
+
 
 reaction_eq_dict = {
     'Excitation': excitation_eq,
@@ -90,67 +110,51 @@ for sample in samples:
         rates.remove('StepExcitation_fourp_higher.h5')
         rates.remove('StepExcitation_higher_fourp.h5')
 
-    # loop over rate data available once 
-    # first, check if the argon state is accounted for
-    # NOTE: assuming template has E, Ar, Ar+ and no Ar* already
-    for rate in rates:
-        
-        rate_split = rate.split('.')[0].split('_')
-        rtype = rate_split[0] # excitation, deexcitation, ionization, recombination, step-excitation, etc.
-        r1 = rate_split[1]
-        r2 = None
-        if len(rate_split) == 3:
-            r2 = rate_split[2]
-
-        sp_list = [template['species'][i]['name'] for i in range(len(template['species']))]
-        
-        if name_to_species[r1] not in sp_list:
-            template['state']['species'].append(name_to_species[r1])
-            template['species'].append({
-                'name': name_to_species[r1],
-                'composition': {'Ar': 1},
-                'formation_energy': formation_energy[name_to_species[r1]]
-            })
-
-        if r2 is not None and name_to_species[r2] not in sp_list:
-            template['state']['species'].append(name_to_species[r2])
-            template['species'].append({
-                'name': name_to_species[r2],
-                'composition': {'Ar': 1},
-                'formation_energy': formation_energy[name_to_species[r2]]
-            })
-
-    # second, loop over rate data again to add reactions
-    if template['reactions'] is None:
-        template['reactions'] = []
-
-    re_list = [template['reactions'][i]['equation'] for i in range(len(template['reactions']))]
-
-    for rate in rates:
-
-        rate_split = rate.split('.')[0].split('_')
-        rtype = rate_split[0] # excitation, deexcitation, ionization, recombination, step-excitation, etc.
-        r1 = rate_split[1]
-        r2 = None
-        if len(rate_split) == 3:
-            r2 = rate_split[2]
+    nSpecies = template['species']['numSpecies'] 
 
 
-        # check if reaction is accounted for
-        reaction_name = reaction_eq_dict[rtype](r1, r2)
-        if reaction_name not in re_list:
-            template['reactions'].append({
-                'equation': reaction_name,
-                'rate_type': 'table',
-                'table':{
-                    'filename': '',
-                    'x_logscale': False,
-                    'y_logscale': True,
-                    'interpolation': True
-                }
-            })
+    # assume template contains properties for each species
 
-    # finally, loop over rate data again to set filenames
+
+    # loop over rate data again to add reactions
+    # if template['reactions'] is None:
+    #     template['reactions'] = []
+
+    # re_list = [template['reactions'][i]['equation'] for i in range(len(template['reactions']))]
+
+
+    # for rate in rates:
+
+    #     rate_split = rate.split('.')[0].split('_')
+    #     rtype = rate_split[0] # excitation, deexcitation, ionization, recombination, step-excitation, etc.
+    #     r1 = rate_split[1]
+    #     r2 = None
+    #     if len(rate_split) == 3:
+    #         r2 = rate_split[2]
+
+
+    #     # check if reaction is accounted for
+    #     reaction_name = reaction_eq_dict[rtype](r1, r2)
+    #     if reaction_name not in re_list:
+    #         template['reactions'].append({
+    #             'equation': reaction_name,
+    #             'rate_type': 'table',
+    #             'table':{
+    #                 'filename': '',
+    #                 'x_logscale': False,
+    #                 'y_logscale': True,
+    #                 'interpolation': True
+    #             }
+    #         })
+
+    # list of reactions
+    klist_f = list(template.keys())
+    klist = []
+    for key in klist:
+        if 'reactions/' in key:
+            klist.append(key)
+
+    # finally, loop over rate data to set filenames
     for rate in rates:
 
         rate_split = rate.split('.')[0].split('_')
@@ -161,17 +165,22 @@ for sample in samples:
             r2 = rate_split[2]
 
         reaction_name = reaction_eq_dict[rtype](r1, r2)
+
         # set filename
-        for item in template['reactions']:
+        # for item in template['reactions']:
+        for item in klist:
             if item['equation'] == reaction_name:
                 item['table']['filename'] = rate_dir + '/' + rate
 
     # set output file
-    template['output']['directory'] = output_dir + '/' + sample + '/output'
+    template['io']['outdirBase'] = output_dir + '/' + sample + '/output'
+
+    # manage restarts, find most current restart file
+    # actually, this might be done automatically?
 
     
     # write to file
-    write_name = output_dir + '/' + sample + '/torch1d_input.yml'
+    write_name = output_dir + '/' + sample + '/tps_axi2d_input.ini'
     with open(write_name, 'w') as f:
         yaml.safe_dump(template, f)
 
