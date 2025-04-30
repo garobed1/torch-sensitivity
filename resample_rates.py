@@ -20,43 +20,57 @@ Equivalent to sample_cross_sections.py in torch-chemistry, except we get forward
 by resampling KL models, then compute backward rates
 """
 
-home = os.getenv('HOME')
-kl_model_dir = 'results/rate_resample_r7/'
-nom_dir = home + "/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/"
-res_dir = home + "/bedonian1/test_spoof/"
+#NOTE: Trying 4 species now
 
+home = os.getenv('HOME')
+# kl_model_dir = 'results/rate_resample_r7/'
+# kl_model_dir = home + "/bedonian1/rate_resample_model_r8/"
+kl_model_dir = home + "/bedonian1/rate_resample_model_4s_r8/"
+# nom_dir = home + "/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/"
+nom_dir = home + "/mean_4s_r6/"
+# res_dir = home + "/bedonian1/torch1d_resample_sens_r7/"
+# res_dir = home + "/bedonian1/rate_mf_r1_pilot/"
+res_dir = home + "/bedonian1/rate_mf_r1_pilot_4s/"
+
+# four_species = False
+four_species = True
 
 #### SAMPLING INPUTS ####
 # Generate some artificial distributions for every considered cross section
 # Nsamples = 8000
-Nsamples = 12
+# Nsamples = 12
+# Nsamples = 1024 # for Sobol sensitivity
+Nsamples = 256 # tentative covariance estimation sample 
 # Nsamples = 4
 
 N_T = 512
-# pc_threshold = 1.0 - 1.e-2 #coarse
-pc_threshold = 1.0 - 1.e-4 
+pc_threshold = 1.0 - 1.e-2 #coarse
+# pc_threshold = 1.0 - 1.e-4 
 pc_proc = 0 # if muKL, 0 means both processes, 1 onward places threshold on that process' spectrum
 
 
-sample_react_dict = {
-    "Excitation": True,
-    "Ionization": True,
-    "StepExcitation": True
-}
 # sample_exc = True
 # sample_ion = True
 # sample_step_exc = False
 
 make_plots = False
+# compute_sobol = False
+compute_sobol = False
 
-reaction_types_fwd = ['Excitation', 'Ionization', 'StepExcitation']
-lumped_rates = ["meta", "res", "fourp", "higher"]
-lumped_rates_g = ["meta", "res", "fourp", "higher", "Ground"]
-lumped_rates_fwd_step = ["meta_res", "meta_fourp", "meta_higher", 
-                        "res_fourp", "res_higher", "fourp_higher"]
-lumped_rates_bwd_step = ["res_meta", "fourp_meta", "higher_meta", 
-                        "fourp_res", "higher_res", "higher_fourp"]
-reaction_types_bwd = ['Excitation', 'Deexcitation', 'Ionization', 'Recombination']
+if four_species:
+    reaction_types_fwd = ['Excitation', 'Ionization']
+    lumped_rates = ["Lumped"]
+    lumped_rates_g = ["Lumped", "Ground"]
+    reaction_types_bwd = ['Excitation', 'Deexcitation', 'Ionization', 'Recombination']
+else:
+    reaction_types_fwd = ['Excitation', 'Ionization', 'StepExcitation']
+    lumped_rates = ["meta", "res", "fourp", "higher"]
+    lumped_rates_g = ["meta", "res", "fourp", "higher", "Ground"]
+    lumped_rates_fwd_step = ["meta_res", "meta_fourp", "meta_higher", 
+                            "res_fourp", "res_higher", "fourp_higher"]
+    lumped_rates_bwd_step = ["res_meta", "fourp_meta", "higher_meta", 
+                            "fourp_res", "higher_res", "higher_fourp"]
+    reaction_types_bwd = ['Excitation', 'Deexcitation', 'Ionization', 'Recombination']
 
 
 sfwd_to_bkw = {
@@ -105,8 +119,8 @@ if not is_indep:
             for proc in frac[rtype][rate]:
                 while proc[c] < pc_threshold:
                     c += 1
-
-                N_pc[rtype][rate].append(c + 0)
+                # at least one var
+                N_pc[rtype][rate].append(max(c + 0, 1))
 
 #NOTE: Hard code ground
 N_pc['Ionization']['Ground'] = [2, 2, 2]
@@ -172,13 +186,14 @@ for key, item in Nvars.items():
 
 
 
-
 ################################################################################################
 # Sample Generation
 # Ground Excitation
 
 perturb_samples_base = {}
 perturb_samples_A = {}
+perturb_samples_B = {}
+perturb_samples_AB = {}
 
 for rtype in config_perturb_dist.keys():
 
@@ -191,37 +206,69 @@ for rtype in config_perturb_dist.keys():
     perturb_samples_base[rtype] = comm.bcast(perturb_samples_base_r0, root=0)
 
     a_sample_file = res_dir + rtype + "_perturb_samples_A.pickle"
+    b_sample_file = res_dir + rtype + "_perturb_samples_B.pickle"
 
     perturb_samples_A[rtype] = None
+    perturb_samples_B[rtype] = None
+    perturb_samples_AB[rtype] = None
 
     if rank == 0:
         if os.path.exists(a_sample_file):
+            if compute_sobol:
+                with open(a_sample_file, 'rb') as f:
+                    perturb_samples_A[rtype] = pickle.load(f)
+                with open(b_sample_file, 'rb') as f:
+                    perturb_samples_B[rtype] = pickle.load(f)
+                perturb_samples_A[rtype], perturb_samples_B[rtype], perturb_samples_AB[rtype] = perturb_samples_A[rtype].genSobolData(perturb_samples_B[rtype])
 
-            with open(a_sample_file, 'rb') as f:
-                perturb_samples_A[rtype] = pickle.load(f)   
+
+            else:
+                with open(a_sample_file, 'rb') as f:
+                    perturb_samples_A[rtype] = pickle.load(f)   
             # if "StepExcitation" in rtype:
             #     breakpoint()
             # perturb_samples_A[rtype] = comm.bcast(perturb_samples_A[rtype], root=0)
 
         else:
-            perturb_samples_A[rtype] = perturb_samples_base[rtype]
-            # if rank == 0:
-            with open(a_sample_file, 'wb') as f:
-                pickle.dump(perturb_samples_A[rtype], f)
-            # comm.Barrier()
+            if compute_sobol:
+                perturb_samples_A_r0, perturb_samples_B_r0, perturb_samples_AB_r0 = perturb_samples_base[rtype].genSobolData()
+
+                perturb_samples_A[rtype], perturb_samples_B[rtype], perturb_samples_AB[rtype] = perturb_samples_base[rtype].genSobolData(perturb_samples_B[rtype])
+
+                # if rank == 0:
+                with open(a_sample_file, 'wb') as f:
+                    pickle.dump(perturb_samples_A[rtype], f)
+                with open(b_sample_file, 'wb') as f:
+                    pickle.dump(perturb_samples_B[rtype], f)
+
+            else:
+                perturb_samples_A[rtype] = perturb_samples_base[rtype]
+                # if rank == 0:
+                with open(a_sample_file, 'wb') as f:
+                    pickle.dump(perturb_samples_A[rtype], f)
+                # comm.Barrier()
     perturb_samples_A[rtype] = comm.bcast(perturb_samples_A[rtype], root=0)
+    perturb_samples_B[rtype] = comm.bcast(perturb_samples_B[rtype], root=0)
+    # perturb_samples_AB[rtype] = comm.bcast(perturb_samples_AB[rtype], root=0)
 
 #################################################################################################
 # Propagation
 
 # divide sample cases
 groups = ['A']
+if compute_sobol:
+    groups = ['A', 'B', 'AB']
 
 perturb_samples = {}
 
 for rtype in config_perturb_dist.keys():
 
     perturb_samples[rtype] = {'A': perturb_samples_A[rtype]}
+
+    if compute_sobol:
+        perturb_samples[rtype]['B'] = perturb_samples_B[rtype]
+        perturb_samples[rtype]['AB'] = perturb_samples_AB[rtype]
+
 
 
 for group in groups:
@@ -254,10 +301,16 @@ for group in groups:
         if checkRateSample(rate_dir, True, True, True):
             continue
         
-        
+        group_exc = group
+        group_ion = group
+        group_step_exc = group
+
+        # map out appropriate samples from each reaction group
+        ind_samp_dict, group_dict = mapABReaction2(isamp, Nsamples, group, Nvars, NvarsTotal)
 
         # assemble perturbations
-        exc_sample = perturb_samples["Excitation"]['A'](isamp)
+        # exc_sample = perturb_samples["Excitation"]['A'](isamp)
+        exc_sample = perturb_samples["Excitation"][group_dict['Excitation']](ind_samp_dict['Excitation'])
         
 
         # Excitation
@@ -265,6 +318,9 @@ for group in groups:
         table = np.zeros((len(T_Maxw), 2))
         for key in exc_sample.keys():
             # Excitation rates
+
+            if group_dict[rtype] == 'AB':
+                exc_sample[key] = exc_sample[key].T[0]
 
             N_pc = len(exc_sample[key])
 
@@ -277,6 +333,7 @@ for group in groups:
             if is_log:
                 kexcite_fwd = np.exp(kexcite_fwd)
                 kexcite_bkw = np.exp(kexcite_bkw)
+            
 
             # breakpoint()
             fname = os.path.join(rate_dir, 'Excitation_' + key + '.h5')
@@ -303,12 +360,16 @@ for group in groups:
         
         
         # assemble perturbations
-        ion_sample = perturb_samples["Ionization"]['A'](isamp)
-
+        # ion_sample = perturb_samples["Ionization"]['A'](isamp)
+        ion_sample = perturb_samples["Ionization"][group_dict["Ionization"]](ind_samp_dict["Ionization"])
+        
         # Forward ionization rates
         rtype = 'Ionization'
         table = np.zeros((len(T_Maxw), 2))
         for key in ion_sample.keys():
+
+            if group_dict[rtype] == 'AB':
+                ion_sample[key] = ion_sample[key].T[0]
 
             N_pc = len(ion_sample[key])
 
@@ -347,45 +408,51 @@ for group in groups:
 
 
         # assemble_perturbations
-        step_exc_sample = perturb_samples["StepExcitation"]['A'](isamp)
-        rtype = 'StepExcitation'
-        table = np.zeros((len(T_Maxw), 2))
-        
-        for key in step_exc_sample.keys():
+        # step_exc_sample = perturb_samples["StepExcitation"]['A'](isamp)
 
+        if "StepExcitation" in reaction_types_fwd:
+            step_exc_sample = perturb_samples["StepExcitation"][group_dict["StepExcitation"]](ind_samp_dict["StepExcitation"])
+
+            rtype = 'StepExcitation'
+            table = np.zeros((len(T_Maxw), 2))
             
-            N_pc = len(step_exc_sample[key])
+            for key in step_exc_sample.keys():
 
-            krate = mean[rtype][key] + np.dot(step_exc_sample[key]*np.sqrt(eigval[rtype][key][:N_pc]),
-                                                        eigvec[rtype][key][:,:N_pc].T)
+                if group_dict[rtype] == 'AB':
+                    step_exc_sample[key] = step_exc_sample[key].T[0]
 
-            kstepexc_fwd = krate[:N_T]
-            kstepexc_bkw = krate[N_T:]
+                N_pc = len(step_exc_sample[key])
 
-            if is_log:
-                kstepexc_fwd = np.exp(kstepexc_fwd)
-                kstepexc_bkw = np.exp(kstepexc_bkw)
+                krate = mean[rtype][key] + np.dot(step_exc_sample[key]*np.sqrt(eigval[rtype][key][:N_pc]),
+                                                            eigvec[rtype][key][:,:N_pc].T)
+
+                kstepexc_fwd = krate[:N_T]
+                kstepexc_bkw = krate[N_T:]
+
+                if is_log:
+                    kstepexc_fwd = np.exp(kstepexc_fwd)
+                    kstepexc_bkw = np.exp(kstepexc_bkw)
 
 
 
-            fname = os.path.join(rate_dir, 'StepExcitation_' + key + '.h5')
-            table[:,0] = T_Maxw
-            table[:,1] = kstepexc_fwd
-            with h5.File(fname, 'w') as f:
-                f.attrs['process'] = 'Ar(' + key.split('_')[0] + ') + e -> Ar(' + key.split('_')[1] +') + e'
-                f.attrs['temperature units'] = 'K'
-                f.attrs['rate units'] = 'm^3 / mol / s'
-                dset = f.create_dataset("table", table.shape, data=table)
+                fname = os.path.join(rate_dir, 'StepExcitation_' + key + '.h5')
+                table[:,0] = T_Maxw
+                table[:,1] = kstepexc_fwd
+                with h5.File(fname, 'w') as f:
+                    f.attrs['process'] = 'Ar(' + key.split('_')[0] + ') + e -> Ar(' + key.split('_')[1] +') + e'
+                    f.attrs['temperature units'] = 'K'
+                    f.attrs['rate units'] = 'm^3 / mol / s'
+                    dset = f.create_dataset("table", table.shape, data=table)
 
-            fname = os.path.join(rate_dir, 'StepExcitation_' + sfwd_to_bkw[key] + '.h5')
-            table[:,0] = T_Maxw
-            table[:,1] = kstepexc_bkw
-            # breakpoint()
-            with h5.File(fname, 'w') as f:
-                f.attrs['process'] = 'Ar(' + key.split('_')[1] + ') + e -> Ar(' + key.split('_')[0] +') + e'
-                f.attrs['temperature units'] = 'K'
-                f.attrs['rate units'] = 'm^3 / mol / s'
-                dset = f.create_dataset("table", table.shape, data=table)
+                fname = os.path.join(rate_dir, 'StepExcitation_' + sfwd_to_bkw[key] + '.h5')
+                table[:,0] = T_Maxw
+                table[:,1] = kstepexc_bkw
+                # breakpoint()
+                with h5.File(fname, 'w') as f:
+                    f.attrs['process'] = 'Ar(' + key.split('_')[1] + ') + e -> Ar(' + key.split('_')[0] +') + e'
+                    f.attrs['temperature units'] = 'K'
+                    f.attrs['rate units'] = 'm^3 / mol / s'
+                    dset = f.create_dataset("table", table.shape, data=table)
 
 
 

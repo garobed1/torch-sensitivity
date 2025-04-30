@@ -1,5 +1,5 @@
 from scipy.stats import sobol_indices
-from scipy.stats.qmc import Sobol
+from scipy.stats.qmc import Sobol, scale
 import numpy as np
 
 
@@ -40,6 +40,51 @@ def computeSobolIndices(O_A, O_B, O_AB, ndim, cat):
     for i in range(ndim):
         f_AB_n[i] = f_AB[:, i*N_A:(i+1)*N_A]
     # breakpoint()
+    func = {'f_A': f_A, 'f_B': f_B, 'f_AB': f_AB_n}
+    res = sobol_indices(func=func, n=N_A)
+
+    return res.first_order, res.total_order
+
+
+
+def computeSobolIndices2(O_A, O_B, O_AB, ndim):
+    # compute sobol indices from data produced from A, B, and AB sample sets
+    # ndim is input dimensionality
+    assert O_A.shape == O_A.shape
+    assert O_AB.shape[0] == O_A.shape[0]
+    assert O_AB.shape[1] == ndim*O_A.shape[1]
+
+    odim = O_A.shape[0]
+    N_A = O_A.shape[1]
+    N_AB = O_AB.shape[1]
+
+    f_A = np.copy(O_A)
+    f_B = np.copy(O_B)
+    f_AB = np.copy(O_AB)
+    # f_AB_n = np.reshape(f_AB, [ndim, odim, N_A])
+    f_AB_n = np.zeros([ndim, odim, N_A])
+
+    # scale the outputs
+    # lbound = np.min(f_A, axis=1)
+    # ubound = np.max(f_A, axis=1)
+
+    # for j in range(N_A):
+    #     f_A[:,j] = (f_A[:,j] - lbound)/(ubound - lbound)
+    #     f_B[:,j] = (f_B[:,j] - lbound)/(ubound - lbound)
+
+    # for j in range(N_AB):
+    #     f_AB[:,j] = (f_AB[:,j] - lbound)/(ubound - lbound)
+
+    # f_A = scale(f_A, lbound, ubound, reverse=True)
+    # f_B = scale(f_B, lbound, ubound, reverse=True)
+    # f_AB = scale(f_AB, lbound, ubound, reverse=True)
+
+    for i in range(ndim):
+        f_AB_n[i] = f_AB[:, i*N_A:(i+1)*N_A]
+
+    # breakpoint()
+
+
     func = {'f_A': f_A, 'f_B': f_B, 'f_AB': f_AB_n}
     res = sobol_indices(func=func, n=N_A)
 

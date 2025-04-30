@@ -16,7 +16,7 @@ plt.rcParams.update({
     "text.usetex": True,
     "font.family": "serif",
     "font.serif": ["Palatino"],
-    "font.size": 15,
+    "font.size": 22,
 })
 
 mask = {}
@@ -45,15 +45,19 @@ for r, res in enumerate(res_names):
     # breakpoint()
 
     qoi_vals[res] = qoi_val
-breakpoint()
+# breakpoint()
     # for qoi in fqoin:
         
 # start with histogram
 
+# OVERRIDE
+qoi_list = ['exit_p', 'exit_T', 'exit_X']
+
 nFig = 0
 qoi_num = {}
 for qoi in qoi_list:
-    qoi_num[qoi] = qoi_val[qoi].shape[1]
+    # qoi_num[qoi] = qoi_val[qoi].shape[1]
+    qoi_num[qoi] = 1
     nFig += qoi_num[qoi]
 
 fig, axs = plt.subplots(nFig, figsize=(12,5. * nFig))
@@ -70,32 +74,38 @@ qoi_labels = {
 
 qoi_legends = {
     "exit_p": [''],
-    "exit_d": ['Ar', 'e'],
+    "exit_d": ['(Ar)', '(e)'],
     "exit_v": [''],
-    "exit_T": ['Ar', 'e'],
-    "exit_X": ['Ar$^+$', 'Ar$^m$', 'Ar$^r$', 'Ar$^p$', 'Ar$^h$' ],
+    "exit_T": ['(Ar)', '(e)'],
+    "exit_X": ['(Ar$^+$)', '(Ar$^m$)', '(Ar$^r$)', '(Ar$^p$)', '(Ar$^h$)' ],
     "heat_dep": ['']
 }
 
+dist_label = {
+    0: "Cross-section propagation",
+    1: "Rate model propagation",
+}
 
 cq = 0
 for qoi in qoi_list:
 
-
-    for i in range(len(qoi_legends[qoi])):
+    for i in range(qoi_num[qoi]):
+    # for i in range(1):
         bins = 20
         qkde = {}
         kde_space = np.linspace(min(qoi_vals[res][qoi][:,i]), max(qoi_vals[res][qoi][:,i]), 1000)
         print(qoi)
+        rq = 0
         for res in res_names:
             if kde:
                 qkde[res] = gaussian_kde(qoi_vals[res][qoi][:,i])
                 yval = qkde[res].evaluate(kde_space)
-                axs[cq].plot(kde_space, qkde[res].evaluate(kde_space))
+                axs[cq].plot(kde_space, qkde[res].evaluate(kde_space), label=dist_label[rq])
                 print(np.trapz(yval))
             else:
                 counts, bins, _ = axs[cq].hist(qoi_vals[res][qoi][:,i], 
                                     bins=bins, density=True, label=res, alpha = 1.0/len(res_names))
+            rq += 1
         # breakpoint()
     #     axs[0].plot(solver.grid.xg, div[x], '-b')
 
@@ -103,21 +113,26 @@ for qoi in qoi_list:
         if kde:
             kl_val = np.sum(kl_div(qkde[res_names[0]].evaluate(kde_space), qkde[res_names[1]].evaluate(kde_space)))/np.sum(qkde[res_names[0]].evaluate(kde_space))
 
-        axs[cq].set_title(qoi_labels[qoi][0] + ' ' + qoi_legends[qoi][i] + ' ' + str(kl_val))
+        axs[cq].grid()
+        axs[cq].set_title(qoi_labels[qoi][0] + ' ' + qoi_legends[qoi][i] + ', Rel. Div. = {:.4f}'.format(kl_val))
         axs[cq].set_xlabel(qoi_labels[qoi][1])
         axs[cq].set_ylabel(qoi_labels[qoi][2])
 
-        cq += 1
+        if cq == 0:
+            axs[cq].legend(fontsize=18)
 
+        cq += 1
+    
 # breakpoint()
 
 
 fig.tight_layout()
 
 if kde:
-    fig.savefig('kpdes.png')
+    # fig.savefig(f'kpdes_full.png')
+    fig.savefig(f'kpdes_pres.png')
 else:
-    fig.savefig('hists.png')
+    fig.savefig(f'hists_full.png')
 
 
 

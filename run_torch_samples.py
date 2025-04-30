@@ -44,13 +44,21 @@ if len(sys.argv) > 1:
 
 # fstep_over = None
 fstep_over = 70000 #override, this should be the final time step
+
+# non 7 species case, also specify fstep_over
+if len(sys.argv) > 3:
+    sample_dir = sys.argv[1]
+    template_file = sys.argv[2]
+    fstep_over = int(sys.argv[3])
+
 torch1d_exec = f"{home}/torch1d/torch1d.py"
 restart = True # enable restart from stopped state
 pcomm = 'python3.11'
 
 
 
-
+def listdir_nopickle(path):
+    return [f for f in os.listdir(path) if not f.endswith('.pickle')]
 
 
 
@@ -71,11 +79,24 @@ if fstep_over is not None:
     fstep = fstep_over
 
 ######### Loop through sample directories in sample_dir
-samples = os.listdir(sample_dir)
+# samples = os.listdir(sample_dir)
+samples = listdir_nopickle(sample_dir)
 samples.sort()
 
-N = len(samples)
 
+# NOTE: REMOVE THIS
+# samples = samples[-512:]
+# samples = samples[-512:-256]
+# samples = samples[11400:11776]
+# remain = [1, 2, 5, 6, 9, 10, 14, 17, 21, 22, 25, 26, 29, 30, 33, 34, 37, 38, 41, 42, 46, 49, 53, 54, 57, 58, 61, 62, 65, 66, 69, 70, 73, 74, 78, 81, 85, 86, 89, 90, 93, 94, 97, 98, 101, 102, 105, 106, 110, 113, 117, 118, 121, 122, 126, 129, 133, 134, 137, 138, 142, 145, 149, 150, 153, 154, 157, 158, 161, 162, 165, 166, 169, 170, 174, 177, 181, 182, 185, 186, 190, 193, 194, 197, 198, 201, 202, 206, 209, 213, 214, 217, 218, 221, 222, 225, 226, 229, 230, 233, 234, 238, 241, 245, 246, 249, 250, 253, 254]
+# # remain = [11653,11658,11669,11685,11701,11706,11717,11722,11733,11738,11749,11754,11765,11770]
+# s2 = []
+# for x in remain:
+#     s2.append(samples[x])
+# samples = s2
+
+
+N = len(samples)
 cases = divide_cases(N, size)
 
 for isamp in cases[rank]:
@@ -121,3 +142,5 @@ for isamp in cases[rank]:
         # run torch1d
         run([pcomm, "torch1d.py", inputfile])
 
+
+# comm.Barrier()

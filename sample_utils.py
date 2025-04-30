@@ -330,7 +330,6 @@ def _sobolABGen(i, SD_A, SD_B, cat):
     # replace B entries
     B = SD_B.getInputArray()
 
-    #TODO: finish this up
     for k in range(len(A_ind)):
     # for k in A_ind:
         cat_inv, ind_inv = SD_A.inds_inv[B_ind[k]]
@@ -376,6 +375,16 @@ def uniformToDist(data, scales, inds):
 
 # NOTE: no beta dist capabilities yet
 def transformDist(x, dist, loc, scale, a=None, b=None):
+
+    if dist == "lognormal":
+        # assume parameters are all already transformed
+        if a == 0.:
+            al = None
+        else:
+            al = np.log(a)
+
+        res = np.exp(transformDist(x, 'normal', loc, scale, a=al, b=b))
+        return res
 
     # if a is not None and b is not None:
     #     x_s = dist_map[dist].ppf(x, loc=loc, scale=scale, a=a, b=b)

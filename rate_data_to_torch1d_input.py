@@ -12,27 +12,43 @@ samples in .h5 format
 
 home = os.environ["HOME"]
 
-# NOW AT r6_3
-# NOW AT r7
 # template_file = "torch1d_argon_sample_config_template.yml"
 # template_file = f"{home}/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/axial_icp_torch.yml"
-template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml"
+
+# template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml"
+# template_file = f"{home}/bedonian1/mean_r6_coarse/torch1d_input_r.yml"
+# template_file = f"{home}/bedonian1/mean_r6_fine/torch1d_input_r.yml"
+template_file = f"{home}/bedonian1/mean_4s_r6/torch1d_input_r.yml"
+# template_file = f"{home}/bedonian1/mean_r6_coarse/torch1d_input_r.yml"
+# template_file = f"{home}/bedonian1/mean_r6_fine/torch1d_input_r.yml"
+
 # sample_dir = f"{home}/bedonian1/cross_section_samples_r1/"
 # sample_dir = f"{home}/bedonian1/cross_section_samples_r3/"
 # sample_dir = f"{home}/bedonian1/cross_section_samples_r7_1/"
 # sample_dir = f"{home}/bedonian1/rate_resample_r7/"
 # sample_dir = f"{home}/bedonian1/rate_resample_r7_coarse/"
-sample_dir = f"{home}/bedonian1/test_spoof/"
+# sample_dir = f"{home}/bedonian1/test_spoof/"
+# sample_dir = f"{home}/bedonian1/torch1d_resample_sens_r8/"
 # sample_dir = f"{home}/bedonian1/cross_section_samples_r6/"
-# output_dir = f"{home}/bedonian1/torch1d_samples_r1/"
 
+# sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot/"
+sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot_4s/"
+
+# output_dir = f"{home}/bedonian1/torch1d_samples_r1/"
 # output_dir = f"{home}/bedonian1/torch1d_samples_r6_3/"
 # output_dir = f"{home}/bedonian1/torch1d_samples_r7_1/"
 # output_dir = f"{home}/bedonian1/torch1d_resample_r7/"
 # output_dir = f"{home}/bedonian1/torch1d_resample_r7_coarse/"
-output_dir = f"{home}/bedonian1/test_spoof/"
+# output_dir = f"{home}/bedonian1/torch1d_resample_sens_r8/"
 # output_dir = f"{home}/bedonian1/torch1d_samples_r3_no_4p_to_h/"
 # output_dir = f"{home}/bedonian1/torch1d_samples_r3_no_4p_to_h_dt/"
+
+# output_dir = f"{home}/bedonian1/torch1d_r1_pilot/"
+# output_dir = f"{home}/bedonian1/torch1d_r1_pilot_coarse/"
+# output_dir = f"{home}/bedonian1/torch1d_r1_pilot_fine/"
+output_dir = f"{home}/bedonian1/torch1d_r1_pilot_4s/"
+# output_dir = f"{home}/bedonian1/torch1d_r1_pilot_coarse/"
+# output_dir = f"{home}/bedonian1/torch1d_r1_pilot_fine/"
 
 no4phigher = False
 
@@ -42,13 +58,15 @@ formation_energy = {'Ar*': 1.114e6, # full lumped excited
                     'Arm': 1116419.84847284, # metastable 4s
                     'Arr': 1129622.58232383, # resonant 4s
                     'Arp': 1267887.18783722, # 4p
-                    'Arh': 1393459.40561185 # higher
+                    'Arh': 1393459.40561185, # higher
+                    'Ars': 1116419.84847284  # fully lumped excited
 }
 
 name_to_species = {'meta':'Arm',
                    'res':'Arr',
                    'fourp':'Arp',
                    'higher':'Arh',
+                   'Lumped':'Ars',
                    'Ground':'Ar'
                    }
 
