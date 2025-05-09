@@ -18,7 +18,8 @@ home = os.environ["HOME"]
 # template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml"
 # template_file = f"{home}/bedonian1/mean_r6_coarse/torch1d_input_r.yml"
 # template_file = f"{home}/bedonian1/mean_r6_fine/torch1d_input_r.yml"
-template_file = f"{home}/bedonian1/mean_4s_r6/torch1d_input_r.yml"
+# template_file = f"{home}/bedonian1/mean_4s_r6/torch1d_input_r.yml"
+template_file = f"{home}/bedonian1/mean_V2_r6/torch1d_input_r.yml"
 # template_file = f"{home}/bedonian1/mean_r6_coarse/torch1d_input_r.yml"
 # template_file = f"{home}/bedonian1/mean_r6_fine/torch1d_input_r.yml"
 
@@ -31,8 +32,8 @@ template_file = f"{home}/bedonian1/mean_4s_r6/torch1d_input_r.yml"
 # sample_dir = f"{home}/bedonian1/torch1d_resample_sens_r8/"
 # sample_dir = f"{home}/bedonian1/cross_section_samples_r6/"
 
-# sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot/"
-sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot_4s/"
+sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot/"
+# sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot_4s/"
 
 # output_dir = f"{home}/bedonian1/torch1d_samples_r1/"
 # output_dir = f"{home}/bedonian1/torch1d_samples_r6_3/"
@@ -46,9 +47,10 @@ sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot_4s/"
 # output_dir = f"{home}/bedonian1/torch1d_r1_pilot/"
 # output_dir = f"{home}/bedonian1/torch1d_r1_pilot_coarse/"
 # output_dir = f"{home}/bedonian1/torch1d_r1_pilot_fine/"
-output_dir = f"{home}/bedonian1/torch1d_r1_pilot_4s/"
+# output_dir = f"{home}/bedonian1/torch1d_r1_pilot_4s/"
 # output_dir = f"{home}/bedonian1/torch1d_r1_pilot_coarse/"
 # output_dir = f"{home}/bedonian1/torch1d_r1_pilot_fine/"
+output_dir = f"{home}/bedonian1/torch1d_r1_pilot_V2/"
 
 no4phigher = False
 

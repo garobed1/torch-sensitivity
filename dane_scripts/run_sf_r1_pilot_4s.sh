@@ -23,4 +23,4 @@ sinfo -s
 
 echo '=====================JOB STARTING=========================='
 
-srun  python3.11 sf_torch1d_uq_post.py /usr/workspace/bedonian1/torch1d_r1_pilot_4s  /usr/workspace/bedonian1/torch1d_post_r1_pilot_4s/ > /dev/null
+srun  python3.11 sf_torch1d_uq_post.py /usr/workspace/bedonian1/torch1d_r1_pilot_4s  /usr/workspace/bedonian1/torch1d_post_r1_pilot_4s/ 25000 > /dev/null

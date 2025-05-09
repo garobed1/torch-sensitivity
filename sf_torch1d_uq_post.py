@@ -19,6 +19,8 @@ Script to perform post-processing of torch1d cases for one fidelity level
 
 def listdir_nopickle(path):
     return [f for f in os.listdir(path) if not f.endswith('.pickle')]
+def listdir_nocrash(path):
+    return [f for f in os.listdir(path) if 'crashed' not in f]
 
 
 
@@ -33,14 +35,20 @@ infile_name = "/torch1d_input.yml"
 res_dir = home + "/bedonian1/torch1d_post_sens_r7/"
 # res_dir = home + "/bedonian1/torch1d_re_post_r7/"
 
+# use this state as the "final" time step
+# fstep = 70000 
+fstep = 25000
+
 if len(sys.argv) > 2:
     sample_out_dir = sys.argv[1]
     res_dir = sys.argv[2]
 
+if len(sys.argv) > 3:
+    fstep = int(sys.argv[3])
+
 out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'heat_dep']
 
-# use this state as the "final" time step
-fstep = 70000 
+
 
 # if true, skip cases that haven't reached the final time step
 skip_incomplete = True
@@ -102,6 +110,22 @@ qoi_sizes = {
     'exit_X': 5,
     'heat_dep': 1
 }
+
+# get template adjustment from first case
+c_dir = sample_out_dir + '/' + clists[group][0]
+c_inf = c_dir + infile_name
+args = inputs.parser.parse_args([c_inf])
+
+config = inputs.InputParser(args.input_file)
+config.dict_['state']['sanity_check'] = False
+solverType = config.getInput(['system','type'], fallback='axial-torch')
+solverDict = {'axial-torch': AxialTorch}
+# solverType = config.getInput(['system','type'], fallback='axial-torch')
+solver = solverDict[solverType](config)
+
+if qoi_sizes['exit_X'] != solver.state.nSpecies - 2:
+    qoi_sizes['exit_X'] = solver.state.nSpecies - 2
+
 qoi_val_r = {}
 qoi_val = {}
 mpi_sizes = {}
@@ -160,7 +184,8 @@ for group in groups:
         # set up residual, and get "final" time step
         from os.path import exists
         rf = None
-        Nr = divmod(solver.timeIntegrator.Nt, solver.outputFrequency)[0]
+        # Nr = divmod(solver.timeIntegrator.Nt, solver.outputFrequency)[0]
+        Nr = len(listdir_nocrash(solver.outputDir)) - 1
         filenames = []
         for r in range(Nr+1):
             filenames += ['%s/%s-%08d.h5' % (solver.outputDir, solver.prefix, nt0 + r * solver.outputFrequency)]

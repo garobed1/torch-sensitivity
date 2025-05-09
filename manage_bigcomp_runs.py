@@ -9,9 +9,13 @@ Generate
 """
 
 home = os.environ["HOME"]
-base_script_path = "run_spoof_torch1dbig.sh"
-sample_dir = f"{home}/bedonian1/test_spoof/"
-script_dir = f"{home}/bedonian1/test_spoof/batch_scripts/"
+base_script_path = "dane_scripts/run_tps2d_r1.sh"
+sample_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_4/"
+script_dir = f"{home}/bedonian1/tps2d_r1_batch_scripts_4/"
+
+rfilename = 'tps_axi2d_input.ini'
+rfilename2 = 'tps_axi2d_input_LT.ini'
+rfilename0 = 'tps_axi2d_input_CT.ini'
 prefix = "sig_A"
 
 parser = argparse.ArgumentParser()
@@ -50,21 +54,38 @@ for sample in samples:
 
     sdir = sample_dir + sample
 
+    if rfilename is not None:
+        # rfile = sdir + '/' + rfilename
+        rfile = rfilename
+    else:
+        rfile = sdir
     # open template
 
     sname = base_script.split('.')[0] + '_' + sample + '.sh'
 
-    with open(base_script, 'r') as f:
+    with open(base_script_path, 'r') as f:
         template = f.read()
     
     # replace sbatch rerun
     template = template.replace(base_script, script_dir + sname)
 
-    # replace input_replace with path to sample director
-    template = template.replace("%INPUT_REPLACE", sdir)
+    # replace input_replace with runfile option
+
+    # change directory if we're using tps
+    if rfilename is not None:
+        # rfile = sdir + '/' + rfilename
+        template = template.replace("%CDIR_REPLACE", 'cd ' + sdir)
+    else:
+        template = template.replace("%CDIR_REPLACE", '')
+        
+    template = template.replace("%INPUT_REPLACE", rfilename)
 
     # replace finish_replace with path to appropriate finish flag
-    template = template.replace("%FINISH_REPLACE", sdir + '/finished')
+    template = template.replace("%FINISH_REPLACE", sdir + '/step_up_time')
+
+    # replace file switchers for next time step
+    template = template.replace("%MV_REPLACE_1", f'mv {rfilename} {rfilename0}')
+    template = template.replace("%MV_REPLACE_2", f'mv {rfilename2} {rfilename}')
 
     # write to script directory
     with open(script_dir + sname, 'w') as f:
