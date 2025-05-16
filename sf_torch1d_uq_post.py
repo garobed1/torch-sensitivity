@@ -29,15 +29,17 @@ home = os.getenv('HOME')
 # sample_in_dir = home + "/bedonian1/cross_section_samples_r7/"
 # sample_out_dir = home + "/bedonian1/torch1d_samples_r7/"
 # sample_out_dir = home + "/bedonian1/torch1d_resample_r7/"
-sample_out_dir = home + "/bedonian1/torch1d_resample_sens_r7/"
+# sample_out_dir = home + "/bedonian1/torch1d_resample_sens_r7/"
+sample_out_dir = home + "/bedonian1/torch1d_r1_pilot/"
 template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml" # keep this to deal with restarts
 infile_name = "/torch1d_input.yml"
-res_dir = home + "/bedonian1/torch1d_post_sens_r7/"
+res_dir = home + "/bedonian1/t1d_time_testing/"
 # res_dir = home + "/bedonian1/torch1d_re_post_r7/"
 
+qoi_ind = -1
 # use this state as the "final" time step
-# fstep = 70000 
-fstep = 25000
+fstep = 70000 
+# fstep = 25000
 
 if len(sys.argv) > 2:
     sample_out_dir = sys.argv[1]
@@ -45,6 +47,11 @@ if len(sys.argv) > 2:
 
 if len(sys.argv) > 3:
     fstep = int(sys.argv[3])
+
+# NOTE: USING THE INDEX FOR THE CORE INSTEAD
+if len(sys.argv) > 4:
+    qoi_ind = int(sys.argv[4])
+
 
 out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'heat_dep']
 
@@ -236,6 +243,7 @@ for group in groups:
         div = np.zeros([Nr+1, solver.grid.Nx])
         rho = np.zeros([Nr+1, solver.grid.Nx])
         Th = np.zeros([Nr+1, solver.grid.Nx])
+        Time = np.zeros([Nr+1])
         Te = np.zeros([Nr+1, solver.grid.Nx])
         vel = np.zeros([Nr+1, solver.grid.Nx, solver.state.nVel])
         nsp = np.zeros([Nr+1, solver.grid.Nx, solver.state.nSpecies])
@@ -262,6 +270,7 @@ for group in groups:
             hist[r] = np.copy(solver.state.conserved)
         #     solver.state.conserved = np.copy(hist[r])
         #     solver.state.time = r * solver.outputFrequency * dt
+            Time[r] = np.copy(solver.state.time)
         # #     print(solver.state.time)
         #     solver.state.update()
         #     rhs0 = solver.rhs.compute(solver.state)
@@ -290,16 +299,27 @@ for group in groups:
                 rxn[r], rxnb[r] = chem.computeRates(solver.state)
                 ndots[r] = np.matmul(chem.creationStoich.T, rxn[r] - rxnb[r])
 
+        # plot exit_X ion over time
+        # X_ion_t = []
+        # for x in range(len(Xsp)):
+        #     X_ion_t.append(Xsp[x][-1,2])
+
+        # plt.plot(Time, X_ion_t)
+        # plt.savefig("xion_over_time_t1d.png")
+        # plt.clf()
+        # breakpoint()
+
+
         if "exit_p" in out_qoi:
-            qoi_val_r[group]["exit_p"][c, :] = hist[rf][-1,0]
+            qoi_val_r[group]["exit_p"][c, :] = hist[rf][qoi_ind,0]
         if "exit_d" in out_qoi:
-            qoi_val_r[group]["exit_d"][c, :] = [rho[rf][-1], hist[rf][-1,-1]*1e5]
+            qoi_val_r[group]["exit_d"][c, :] = [rho[rf][qoi_ind], hist[rf][qoi_ind,-1]*1e5]
         if "exit_v" in out_qoi:
-            qoi_val_r[group]["exit_v"][c, :] = vel[rf][-1,-1]
+            qoi_val_r[group]["exit_v"][c, :] = vel[rf][qoi_ind,-1]
         if "exit_T" in out_qoi:
-            qoi_val_r[group]["exit_T"][c, :] = [Th[rf][-1], Te[rf][-1]]
+            qoi_val_r[group]["exit_T"][c, :] = [Th[rf][qoi_ind], Te[rf][qoi_ind]]
         if "exit_X" in out_qoi:
-            qoi_val_r[group]["exit_X"][c, :] = Xsp[rf][-1,2:7]
+            qoi_val_r[group]["exit_X"][c, :] = Xsp[rf][qoi_ind,2:7]
         if "heat_dep" in out_qoi:
             qoi_val_r[group]["heat_dep"][c, :] = plasmaPower[rf] * 1e-3
 

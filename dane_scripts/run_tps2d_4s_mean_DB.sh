@@ -10,6 +10,10 @@
 
 
 
-srun ~/tps/src/tps --runFile tps_axi2d_input.ini
+# creates automatic checkpoints and automatically starts from the most recent checkpoint
+cd ~/bedonian1/mean_tps2d_4s_r6/
+srun ~/tps/src/tps --runFile lomach.torch.reacting.ini
+# when finished, replace small timestep infile with large timestep infile
+
 
 exit 0

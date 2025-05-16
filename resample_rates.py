@@ -24,23 +24,29 @@ by resampling KL models, then compute backward rates
 
 home = os.getenv('HOME')
 # kl_model_dir = 'results/rate_resample_r7/'
-# kl_model_dir = home + "/bedonian1/rate_resample_model_r8/"
-kl_model_dir = home + "/bedonian1/rate_resample_model_4s_r8/"
+kl_model_dir = home + "/bedonian1/rate_resample_model_r8/"
+# kl_model_dir = home + "/bedonian1/rate_resample_model_4s_r8/"
 # nom_dir = home + "/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/"
-nom_dir = home + "/mean_4s_r6/"
+# nom_dir = home + "/mean_4s_r6/"
+nom_dir = home + "/mean_r6/"
 # res_dir = home + "/bedonian1/torch1d_resample_sens_r7/"
 # res_dir = home + "/bedonian1/rate_mf_r1_pilot/"
-res_dir = home + "/bedonian1/rate_mf_r1_pilot_4s/"
+# res_dir = home + "/bedonian1/rate_mf_r1_pilot_4s/"
+res_dir = home + "/bedonian1/rate_mf_r1_G1/"
+# res_dir = home + "/bedonian1/rate_mf_r1_G2/"
+# res_dir = home + "/bedonian1/rate_mf_r1_G3/"
+# res_dir = home + "/bedonian1/rate_mf_r1_G4/"
 
-# four_species = False
-four_species = True
+four_species = False
+# four_species = True
 
 #### SAMPLING INPUTS ####
 # Generate some artificial distributions for every considered cross section
-# Nsamples = 8000
+Nsamples = 50000
+# Nsamples = 100
 # Nsamples = 12
 # Nsamples = 1024 # for Sobol sensitivity
-Nsamples = 256 # tentative covariance estimation sample 
+# Nsamples = 256 # tentative covariance estimation sample 
 # Nsamples = 4
 
 N_T = 512

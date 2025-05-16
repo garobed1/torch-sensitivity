@@ -15,40 +15,64 @@ samples in .h5 format, same as torch1d
 home = os.environ["HOME"]
 
 # template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml"
-# template_file = f"{home}/bedonian1/mean_tps2d_r6/lomach.torch.reacting.ini"
-template_file = f"{home}/bedonian1/mean_tps2d_r6/r_lomach.torch.reacting.ini"
-sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot/"
+template_file = f"{home}/bedonian1/mean_tps2d_r6/lomach.torch.reacting.ini"
+# template_file = f"{home}/bedonian1/mean_tps2d_4s_r6/lomach.torch.reacting.ini"
+# template_file = f"{home}/bedonian1/mean_tps2d_LF_r6/lomach.torch.reacting.ini"
+# template_file = f"{home}/bedonian1/mean_tps2d_r6/r_lomach.torch.reacting.ini"
+
+# sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot/"
+# sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot_4s/"
+sample_dir = f"{home}/bedonian1/rate_mf_r1_G4/"
+
 restart_file = f"{home}/bedonian1/mean_tps2d_r6/restart_output-torch.sol.h5"
-output_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_4/"
+# restart_file = f"{home}/bedonian1/mean_tps2d_4s_r6/restart_output-torch.sol.h5"
+# restart_file = f"{home}/bedonian1/mean_tps2d_LF_r6/restart_output-torch.sol.h5"
+# output_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_5/"
+# output_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_4s_1/"
+# output_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_LF_1_T2/"
+output_dir = f"{home}/bedonian1/tps2d_mf_r1_G4/"
+# output_dir = f"{home}/bedonian1/tps2d_time_test_2/"
 
 
 
 restart_fname = restart_file.split('/')[-1]
 # don't make files for all 256 samples, start with the first few
-# sample_start = 0
+sample_start = 0
 # sample_limit = 8
 # sample_start = 8
 # sample_limit = 16
 # sample_start = 16
 # sample_limit = 32
-sample_start = 32
-sample_limit = 48
+# sample_start = 32
+# sample_limit = 48
+# sample_start = 48
+# sample_limit = 64
+sample_limit = 100
+sample_list = None
+# sample_list = [1, 31]
 
-dt = 1e-8
-dt_next = 1e-6
+# dt_l = [1e-8, 1e-7, 1e-6, 1e-6, 2e-6]
+# nt_l = [60000, 5000, 60000, 30000, 40000]
+dt_l = [1e-8, 1e-7, 1e-6, 1e-6, 1e-6]
+nt_l = [40000, 10000, 50000, 50000, 50000]
+# FOR LF
+# dt_l = [1e-8, 1e-7, 1e-6, 1e-6, 1e-6]
+# nt_l = [110000, 10000, 50000, 50000, 50000]
 
 formation_energy = {'Ar*': 1.114e6, # full lumped excited
                     'Ar.+1': 1520571.3883, # ionized
                     'Ar_m': 1116419.84847284, # metastable 4s
                     'Ar_r': 1129622.58232383, # resonant 4s
                     'Ar_p': 1267887.18783722, # 4p
-                    'Ar_h': 1393459.40561185 # higher
+                    'Ar_h': 1393459.40561185, # higher
+                    'Ar_s': 1116419.84847284  # fully lumped excited
 }
 
 name_to_species = {'meta':'Ar_m',
                    'res':'Ar_r',
                    'fourp':'Ar_p',
                    'higher':'Ar_h',
+                   'Lumped':'Ar_s',
                    'Ground':'Ar'
                    }
 
@@ -56,7 +80,8 @@ name_to_st = {
     'meta':'1 0 0 0',
     'res':'0 1 0 0',
     'fourp':'0 0 1 0',
-    'higher':'0 0 0 1'
+    'higher':'0 0 0 1',
+    'Lumped':''
 }
 
 #Equation name
@@ -76,15 +101,15 @@ def stepexcitation_eq(name, name2):
     return name_to_species[name] + ' + E => ' + name_to_species[name2] + ' + E'
 
 
-#Stoichiometry
-def ground_st():
-    return '1 1 0 0 0 0 0'
+# #Stoichiometry
+# def ground_st():
+#     return '1 1 0 0 0 0 0'
 
-def excited_st(name):
-    return '0 1 ' + name_to_st[name] + ' 0'
+# def excited_st(name):
+#     return '0 1 ' + name_to_st[name] + ' 0'
 
-def ion_st():
-    return '0 2 0 0 0 0 1'
+# def ion_st():
+#     return '0 2 0 0 0 0 1'
 
 def listdir_nopickle(path):
     return [f for f in os.listdir(path) if not f.endswith('.pickle')]
@@ -114,8 +139,12 @@ if not os.path.isdir(output_dir):
 samples = listdir_nopickle(sample_dir)
 samples.sort()
 
-if sample_limit:
+if sample_limit is not None:
     samples = samples[sample_start:sample_limit]
+
+if sample_list is not None:
+    samples = [samples[x] for x in sample_list]
+
 # breakpoint()
 for sample in samples:
 
@@ -141,38 +170,6 @@ for sample in samples:
     # assume template contains properties for each species
 
 
-    # loop over rate data again to add reactions
-    # if template['reactions'] is None:
-    #     template['reactions'] = []
-
-    # re_list = [template['reactions'][i]['equation'] for i in range(len(template['reactions']))]
-
-
-    # for rate in rates:
-
-    #     rate_split = rate.split('.')[0].split('_')
-    #     rtype = rate_split[0] # excitation, deexcitation, ionization, recombination, step-excitation, etc.
-    #     r1 = rate_split[1]
-    #     r2 = None
-    #     if len(rate_split) == 3:
-    #         r2 = rate_split[2]
-
-
-    #     # check if reaction is accounted for
-    #     reaction_name = reaction_eq_dict[rtype](r1, r2)
-    #     if reaction_name not in re_list:
-    #         template['reactions'].append({
-    #             'equation': reaction_name,
-    #             'rate_type': 'table',
-    #             'table':{
-    #                 'filename': '',
-    #                 'x_logscale': False,
-    #                 'y_logscale': True,
-    #                 'interpolation': True
-    #             }
-    #         })
-
-    template['time']['dt_fixed'] = f'{dt}'
 
     # list of reactions
     klist_f = list(template.keys())
@@ -205,22 +202,27 @@ for sample in samples:
 
     # copy the restart file
     # DO NOT DO THIS, DO IT SEPARATELY!!!!
-    # shutil.copy2(restart_file, output_dir + '/' + sample)
+    shutil.copy2(restart_file, output_dir + '/' + sample)
 
     # manage restarts, find most current restart file
     # template['io']['restartBase'] = output_dir + '/' + sample + '/' + restart_fname
 
-    
-    # write to file
-    write_name = output_dir + '/' + sample + '/tps_axi2d_input.ini'
-    with open(write_name, 'w') as f:
-        template.write(f)
+    # write multiple time steps to file
 
-    # write a larger timestep version to file as well
-    template['time']['dt_fixed'] = f'{dt_next}'
-    write_name = output_dir + '/' + sample + '/tps_axi2d_input_LT.ini'
-    with open(write_name, 'w') as f:
-        template.write(f)
+    for i in range(len(dt_l)):
+        template['time']['dt_fixed'] = f'{dt_l[i]}'
+        template['cycle-avg-joule-coupled']['max-iters'] = f'{nt_l[i]}'
+
+        # write to file
+        write_name = output_dir + '/' + sample + f'/tps_axi2d_input_{i}.ini'
+        with open(write_name, 'w') as f:
+            template.write(f)
+
+    # # write a larger timestep version to file as well
+    # template['time']['dt_fixed'] = f'{dt_next}'
+    # write_name = output_dir + '/' + sample + '/tps_axi2d_input_LT.ini'
+    # with open(write_name, 'w') as f:
+    #     template.write(f)
 
     
     

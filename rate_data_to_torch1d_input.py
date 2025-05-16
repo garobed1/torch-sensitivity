@@ -17,9 +17,10 @@ home = os.environ["HOME"]
 
 # template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml"
 # template_file = f"{home}/bedonian1/mean_r6_coarse/torch1d_input_r.yml"
+template_file = f"{home}/bedonian1/mean_r6_coarse_mf/torch1d_input_r.yml"
 # template_file = f"{home}/bedonian1/mean_r6_fine/torch1d_input_r.yml"
 # template_file = f"{home}/bedonian1/mean_4s_r6/torch1d_input_r.yml"
-template_file = f"{home}/bedonian1/mean_V2_r6/torch1d_input_r.yml"
+# template_file = f"{home}/bedonian1/mean_V2_r6/torch1d_input_r.yml"
 # template_file = f"{home}/bedonian1/mean_r6_coarse/torch1d_input_r.yml"
 # template_file = f"{home}/bedonian1/mean_r6_fine/torch1d_input_r.yml"
 
@@ -32,7 +33,10 @@ template_file = f"{home}/bedonian1/mean_V2_r6/torch1d_input_r.yml"
 # sample_dir = f"{home}/bedonian1/torch1d_resample_sens_r8/"
 # sample_dir = f"{home}/bedonian1/cross_section_samples_r6/"
 
-sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot/"
+# sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot/"
+# sample_dir = f"{home}/bedonian1/rate_mf_r1_G1/"
+# sample_dir = f"{home}/bedonian1/rate_mf_r1_G2/"
+sample_dir = f"{home}/bedonian1/rate_mf_r1_G4/"
 # sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot_4s/"
 
 # output_dir = f"{home}/bedonian1/torch1d_samples_r1/"
@@ -50,7 +54,8 @@ sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot/"
 # output_dir = f"{home}/bedonian1/torch1d_r1_pilot_4s/"
 # output_dir = f"{home}/bedonian1/torch1d_r1_pilot_coarse/"
 # output_dir = f"{home}/bedonian1/torch1d_r1_pilot_fine/"
-output_dir = f"{home}/bedonian1/torch1d_r1_pilot_V2/"
+# output_dir = f"{home}/bedonian1/torch1d_r1_G1_coarse/"
+output_dir = f"{home}/bedonian1/torch1d_r1_G4_coarse/"
 
 no4phigher = False
 
@@ -105,6 +110,8 @@ if not os.path.isdir(output_dir):
 
 ######### Loop through sample directories in sample_dir
 samples = os.listdir(sample_dir)
+samples = samples[:20000]
+
 for sample in samples:
 
     rate_dir = sample_dir + '/' + sample + '/rates'

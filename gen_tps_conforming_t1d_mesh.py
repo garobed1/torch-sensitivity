@@ -27,6 +27,11 @@ torch_wall = torch_wall[sarg]
 xdiff = x_0[-1] - torch_wall[-1,1]
 torch_wall[:,1] += xdiff
 
+plt.plot(x_0, r_0)
+plt.plot(torch_wall[:,1], torch_wall[:,0])
+plt.savefig("t1d_tps_before.png")
+breakpoint()
+
 # generate t1d radius from tps mesh on existing x points
 # mask for x points shared between t1d and tps
 extend_mask =  [x for x in range(len(x_0)) if x_0[x] > xdiff]
@@ -37,9 +42,9 @@ r_f[extend_mask] = np.interp(x_interp, torch_wall[:,1], torch_wall[:,0])
 
 plt.plot(x_0, r_0)
 plt.plot(torch_wall[:,1], torch_wall[:,0])
+plt.savefig("t1d_tps_after.png")
+breakpoint()
 plt.plot(x_0, r_f)
-plt.savefig("t1d_tps_mcomp.png")
-# breakpoint()
 # exc_sum = np.sum(table[:,7:], axis=1)
 # table = table[:,:8]
 # table[:,-1] = exc_sum
