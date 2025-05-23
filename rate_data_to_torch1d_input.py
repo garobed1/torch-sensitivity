@@ -15,9 +15,9 @@ home = os.environ["HOME"]
 # template_file = "torch1d_argon_sample_config_template.yml"
 # template_file = f"{home}/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/axial_icp_torch.yml"
 
-# template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml"
+template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml"
 # template_file = f"{home}/bedonian1/mean_r6_coarse/torch1d_input_r.yml"
-template_file = f"{home}/bedonian1/mean_r6_coarse_mf/torch1d_input_r.yml"
+# template_file = f"{home}/bedonian1/mean_r6_coarse_mf/torch1d_input_r.yml"
 # template_file = f"{home}/bedonian1/mean_r6_fine/torch1d_input_r.yml"
 # template_file = f"{home}/bedonian1/mean_4s_r6/torch1d_input_r.yml"
 # template_file = f"{home}/bedonian1/mean_V2_r6/torch1d_input_r.yml"
@@ -35,8 +35,9 @@ template_file = f"{home}/bedonian1/mean_r6_coarse_mf/torch1d_input_r.yml"
 
 # sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot/"
 # sample_dir = f"{home}/bedonian1/rate_mf_r1_G1/"
-# sample_dir = f"{home}/bedonian1/rate_mf_r1_G2/"
-sample_dir = f"{home}/bedonian1/rate_mf_r1_G4/"
+sample_dir = f"{home}/bedonian1/rate_mf_r1_G2/"
+# sample_dir = f"{home}/bedonian1/rate_mf_r1_G4/"
+# sample_dir = f"{home}/bedonian1/rate_mf_r1_G3/"
 # sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot_4s/"
 
 # output_dir = f"{home}/bedonian1/torch1d_samples_r1/"
@@ -55,7 +56,13 @@ sample_dir = f"{home}/bedonian1/rate_mf_r1_G4/"
 # output_dir = f"{home}/bedonian1/torch1d_r1_pilot_coarse/"
 # output_dir = f"{home}/bedonian1/torch1d_r1_pilot_fine/"
 # output_dir = f"{home}/bedonian1/torch1d_r1_G1_coarse/"
-output_dir = f"{home}/bedonian1/torch1d_r1_G4_coarse/"
+# output_dir = f"{home}/bedonian1/torch1d_r1_G4_coarse/"
+# output_dir = f"{home}/bedonian1/torch1d_r1_G3_coarse/"
+# output_dir = f"{home}/bedonian1/torch1d_r1_G3_mid/"
+# output_dir = f"{home}/bedonian1/torch1d_r1_G3_fine/"
+# output_dir = f"{home}/bedonian1/torch1d_r1_G4_fine/"
+# output_dir = f"{home}/bedonian1/torch1d_r1_G4_mid/"
+output_dir = f"{home}/bedonian1/torch1d_r1_G2_mid/"
 
 no4phigher = False
 

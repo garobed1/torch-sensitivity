@@ -51,7 +51,7 @@ for r, res in enumerate(res_names):
 # start with histogram
 
 # OVERRIDE
-qoi_list = ['exit_p', 'exit_T', 'exit_X']
+qoi_list = ['exit_v', 'exit_T', 'exit_X']
 
 nFig = 0
 qoi_num = {}
@@ -114,7 +114,7 @@ for qoi in qoi_list:
             kl_val = np.sum(kl_div(qkde[res_names[0]].evaluate(kde_space), qkde[res_names[1]].evaluate(kde_space)))/np.sum(qkde[res_names[0]].evaluate(kde_space))
 
         axs[cq].grid()
-        axs[cq].set_title(qoi_labels[qoi][0] + ' ' + qoi_legends[qoi][i] + ', Rel. Div. = {:.4f}'.format(kl_val))
+        axs[cq].set_title(qoi_labels[qoi][0] + ' ' + qoi_legends[qoi][i] + ', KL Div. = {:.2f}\%'.format(kl_val*100))
         axs[cq].set_xlabel(qoi_labels[qoi][1])
         axs[cq].set_ylabel(qoi_labels[qoi][2])
 
@@ -130,7 +130,7 @@ fig.tight_layout()
 
 if kde:
     # fig.savefig(f'kpdes_full.png')
-    fig.savefig(f'kpdes_pres.png')
+    fig.savefig(f'kpdes_pres2.png')
 else:
     fig.savefig(f'hists_full.png')
 

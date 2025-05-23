@@ -24,14 +24,15 @@ home = os.environ["HOME"]
 # sample_dir = f"{home}/bedonian1/torch1d_samples_r6_1"
 # sample_dir = f"{home}/bedonian1/torch1d_samples_r6_3"
 # sample_dir = f"{home}/bedonian1/torch1d_samples_r7"
-sample_dir = f"{home}/bedonian1/torch1d_r1_pilot_4s"
+sample_dir = f"{home}/bedonian1/torch1d_r1_G3_fine"
 # nom_dir = f"{home}/bedonian1/nominal_r6/"
-nom_dir = f"{home}/bedonian1/mean_4s_r6/"
+# nom_dir = f"{home}/bedonian1/mean_4s_r6/"
+nom_dir = f"{home}/bedonian1/mean_r6/"
 # Nsteps_exp = 10000
 
 # fstep_override = None
-# fstep_override = 65000
-fstep_override = 70000
+fstep_override = 65000
+# fstep_override = 70000
 
 compare_at = 1023
 

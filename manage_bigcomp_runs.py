@@ -18,14 +18,15 @@ base_script_path = "dane_scripts/run_tps2d_stage.sh"
 # sample_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_LF_1/"
 # sample_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_LF2_1_T2/"
 # sample_dir = f"{home}/bedonian1/tps2d_time_test_2/"
-sample_dir = f"{home}/bedonian1/tps2d_mf_r1_G4/"
+# sample_dir = f"{home}/bedonian1/tps2d_mf_r1_G4/"
+sample_dir = f"{home}/bedonian1/tps2d_mf_r1_G3/"
 
 
 # script_dir = f"{home}/bedonian1/tps2d_r1_batch_scripts_5/"
 # script_dir = f"{home}/bedonian1/tps2d_r1_batch_scripts_4s_1/"
 # script_dir = f"{home}/bedonian1/tps2d_r1_batch_scripts_LF2_1_T2/"
 # script_dir = f"{home}/bedonian1/tps2d_time_test_scripts_2/"
-script_dir = f"{home}/bedonian1/tps2d_r1_batch_scripts_G4/"
+script_dir = f"{home}/bedonian1/tps2d_r1_batch_scripts_G3/"
 
 rfilename = 'tps_axi2d_input.ini'
 rfilenames = ['tps_axi2d_input_0.ini', 'tps_axi2d_input_1.ini', 'tps_axi2d_input_2.ini', 'tps_axi2d_input_3.ini', 'tps_axi2d_input_4.ini']

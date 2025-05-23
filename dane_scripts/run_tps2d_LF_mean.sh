@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -N 1
 #SBATCH -n 112
-#SBATCH -t 8:00:00
+#SBATCH -t 4:00:00
 #SBATCH -p pbatch
 #SBATCH --mail-type=ALL
 #SBATCH -o output.%j              #Output file name

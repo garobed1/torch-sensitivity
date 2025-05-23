@@ -20,7 +20,7 @@ Script to perform post-processing of torch1d cases for one fidelity level
 def listdir_nopickle(path):
     return [f for f in os.listdir(path) if not f.endswith('.pickle')]
 def listdir_nocrash(path):
-    return [f for f in os.listdir(path) if 'crashed' not in f]
+    return [f for f in os.listdir(path) if 'crashed' not in f and 'tar.gz' not in f]
 
 
 
@@ -58,7 +58,7 @@ out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'heat_dep']
 
 
 # if true, skip cases that haven't reached the final time step
-skip_incomplete = True
+skip_incomplete = False
 
 make_plots = False
 plt.rcParams.update({
@@ -192,10 +192,13 @@ for group in groups:
         from os.path import exists
         rf = None
         # Nr = divmod(solver.timeIntegrator.Nt, solver.outputFrequency)[0]
-        Nr = len(listdir_nocrash(solver.outputDir)) - 1
+        flist = listdir_nocrash(solver.outputDir)
+        flist.sort()
+        Nr = len(flist) - 1
         filenames = []
         for r in range(Nr+1):
-            filenames += ['%s/%s-%08d.h5' % (solver.outputDir, solver.prefix, nt0 + r * solver.outputFrequency)]
+            # filenames += ['%s/%s-%08d.h5' % (solver.outputDir, solver.prefix, nt0 + r * solver.outputFrequency)]
+            filenames += [solver.outputDir + '/' + flist[r]]
             
             if nt0 + r * solver.outputFrequency == fstep and exists(filenames[-1]): 
                 rf = r + 0
@@ -263,7 +266,13 @@ for group in groups:
             chem = MassActionLaw(solver.state, config)
         for r, filename in enumerate(filenames):
         #     filename = '%s/%s-%08d.h5' % (solver.outputDir, solver.prefix, nt0 + r * solver.outputFrequency)
-            solver.state.loadState(filename)
+            if 1:
+            # try:
+                solver.state.loadState(filename)
+            # except:
+            #     print(filename, file=sys.stderr)
+            #     quit()
+            #     solver.state.loadState(filename)
             # solver.rhs.collInt.update(solver.state)
             solver.state.collInt.update(solver.state)
         #     transport.update(solver.state)
@@ -586,7 +595,6 @@ for group in groups:
             print(Xsp[-2][-1,6])
             print("Minimum Prandtl Number")
             print(np.amin(Pr[-2]))
-
 
         c += 1
 

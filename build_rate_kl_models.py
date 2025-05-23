@@ -18,15 +18,17 @@ home = os.getenv('HOME')
 # sample_dir = home + "/bedonian1/cross_section_samples_r6/"
 # sample_dirs = [home + "/bedonian1/cross_section_samples_r7/"]
 # sample_dirs = [home + "/bedonian1/cross_section_samples_r7/", home + "/bedonian1/cross_section_samples_r7_1/"]
-# sample_dirs = [home + "/bedonian1/cross_section_samples_r8_1/", home + "/bedonian1/cross_section_samples_r8_2/"]
-sample_dirs = [home + "/bedonian1/cross_section_4species_r8_1/", home + "/bedonian1/cross_section_4species_r8_2/"]
+sample_dirs = [home + "/bedonian1/cross_section_samples_r8_1/", home + "/bedonian1/cross_section_samples_r8_2/"]
+# sample_dirs = [home + "/bedonian1/cross_section_4species_r8_1/", home + "/bedonian1/cross_section_4species_r8_2/"]
 nom_dir = home + "/bedonian1/mean_4s_r6/"
 # res_dir = "results/cross_section_samples_r3/"
 # res_dir = "results/cross_section_samples_r6_3/"
 # res_dir = "results/rate_resample_r7/"
 # res_dir = "results/rate_resample_r8/"
 # res_dir = home + "/bedonian1/rate_resample_model_r8/"
-res_dir = home + "/bedonian1/rate_resample_model_4s_r8/"
+# res_dir = home + "/bedonian1/rate_resample_model_4s_r8/"
+res_dir = home + "/bedonian1/rate_resample_plots/"
+
 
 mean_dir = home + "/bedonian1/mean_4s_r6/"
 

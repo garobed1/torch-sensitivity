@@ -22,7 +22,7 @@ template_file = f"{home}/bedonian1/mean_tps2d_r6/lomach.torch.reacting.ini"
 
 # sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot/"
 # sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot_4s/"
-sample_dir = f"{home}/bedonian1/rate_mf_r1_G4/"
+sample_dir = f"{home}/bedonian1/rate_mf_r1_G3/"
 
 restart_file = f"{home}/bedonian1/mean_tps2d_r6/restart_output-torch.sol.h5"
 # restart_file = f"{home}/bedonian1/mean_tps2d_4s_r6/restart_output-torch.sol.h5"
@@ -30,14 +30,14 @@ restart_file = f"{home}/bedonian1/mean_tps2d_r6/restart_output-torch.sol.h5"
 # output_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_5/"
 # output_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_4s_1/"
 # output_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_LF_1_T2/"
-output_dir = f"{home}/bedonian1/tps2d_mf_r1_G4/"
+output_dir = f"{home}/bedonian1/tps2d_mf_r1_G3/"
 # output_dir = f"{home}/bedonian1/tps2d_time_test_2/"
 
 
 
 restart_fname = restart_file.split('/')[-1]
 # don't make files for all 256 samples, start with the first few
-sample_start = 0
+sample_start = 200
 # sample_limit = 8
 # sample_start = 8
 # sample_limit = 16
@@ -47,7 +47,7 @@ sample_start = 0
 # sample_limit = 48
 # sample_start = 48
 # sample_limit = 64
-sample_limit = 100
+sample_limit = 250
 sample_list = None
 # sample_list = [1, 31]
 
@@ -202,7 +202,7 @@ for sample in samples:
 
     # copy the restart file
     # DO NOT DO THIS, DO IT SEPARATELY!!!!
-    shutil.copy2(restart_file, output_dir + '/' + sample)
+    # shutil.copy2(restart_file, output_dir + '/' + sample)
 
     # manage restarts, find most current restart file
     # template['io']['restartBase'] = output_dir + '/' + sample + '/' + restart_fname
