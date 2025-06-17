@@ -1,8 +1,8 @@
 from scipy.stats.qmc import scale
 from scipy.stats import norm, uniform, beta, lognorm, truncnorm
 import numpy as np
-from tuq_util.sobol_tools import *
-from tuq_util.mc_tools import *
+from util_tuq.sobol_tools import *
+from util_tuq.mc_tools import *
 
 
 

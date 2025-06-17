@@ -28,6 +28,7 @@ Scripts to automate/parallelize these processes for many samples are in
 ### Building reaction rate KL models and sampling them
 
 ```
+build_rate_kl_models.py
 resample_rates.py
 ```
 

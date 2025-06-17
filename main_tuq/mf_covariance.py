@@ -6,9 +6,9 @@ import pandas as pd
 import h5py as h5
 import scipy.constants as spc
 
-from tuq_util.sample_utils import *
-from tuq_util.sobol_tools import *
-from tuq_util.pca_tools import *
+from util_tuq.sample_utils import *
+from util_tuq.sobol_tools import *
+from util_tuq.pca_tools import *
 
 """
 NOTE: This script is superceded by the torch-multifidelity repo
@@ -28,17 +28,24 @@ home = os.getenv('HOME')
 # in_dir = home + "/bedonian1/torch1d_resample_sens_r8/"
 
 # include 4s when done
+
+### Output Sample Directories per Model
 # out_dirs = [home + "/bedonian1/torch1d_post_r1_pilot_fine", home + "/bedonian1/torch1d_post_r1_pilot", home + "/bedonian1/torch1d_post_r1_pilot_coarse"]
 # out_dirs = [home + "/bedonian1/tps2d_mf_post_r1/", home + "/bedonian1/torch1d_post_r1_pilot_fine", home + "/bedonian1/torch1d_post_r1_pilot", home + "/bedonian1/torch1d_post_r1_pilot_coarse", home + "/bedonian1/torch1d_post_r1_pilot_4s"]
 # out_dirs = [home + "/bedonian1/tps2d_mf_post_r1_far/", home + "/bedonian1/torch1d_post_r1_pilot_fine", home + "/bedonian1/torch1d_post_r1_pilot", home + "/bedonian1/torch1d_post_r1_pilot_coarse", home + "/bedonian1/torch1d_post_r1_pilot_4s"]
 out_dirs = [home + "/bedonian1/tps2d_mf_post_r1_far/", home + "/bedonian1/torch1d_post_r1_pilot_fine", home + "/bedonian1/torch1d_post_r1_pilot", home + "/bedonian1/torch1d_post_r1_pilot_coarse"]#, home + "/bedonian1/torch1d_post_r1_pilot_4s"]
 # correspond to out_dirs order
+
+### Model Names (Ordered)
 # out_names = ["1D_Fine", "1D_Mid", "1D_Coarse"]
 # out_names = ["1D_Fine", "1D_Mid", "1D_Coarse", "1D_4Species"]
 # out_names = ["2D_Axi", "1D_Fine", "1D_Mid", "1D_Coarse", "1D_4Species"]
 out_names = ["2D_Axi", "1D_Fine", "1D_Mid", "1D_Coarse"]
 # max_sample = 0 # no limit
+
+### Number of Samples to Estimate Correlation
 max_sample = 32
+
 
 ##########################################################################################################
 # Script Starts Here

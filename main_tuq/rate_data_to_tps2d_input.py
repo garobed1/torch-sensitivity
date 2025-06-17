@@ -16,28 +16,32 @@ samples in .h5 format, same as torch1d
 
 home = os.environ["HOME"]
 
+### TPS (2D) Input File Template
 # template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml"
 template_file = f"{home}/bedonian1/mean_tps2d_r6/lomach.torch.reacting.ini"
 # template_file = f"{home}/bedonian1/mean_tps2d_4s_r6/lomach.torch.reacting.ini"
 # template_file = f"{home}/bedonian1/mean_tps2d_LF_r6/lomach.torch.reacting.ini"
 # template_file = f"{home}/bedonian1/mean_tps2d_r6/r_lomach.torch.reacting.ini"
 
+### Rate Samples
 # sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot/"
 # sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot_4s/"
 sample_dir = f"{home}/bedonian1/rate_mf_r1_G3/"
 
+### Restart File Template
 restart_file = f"{home}/bedonian1/mean_tps2d_r6/restart_output-torch.sol.h5"
 # restart_file = f"{home}/bedonian1/mean_tps2d_4s_r6/restart_output-torch.sol.h5"
 # restart_file = f"{home}/bedonian1/mean_tps2d_LF_r6/restart_output-torch.sol.h5"
+
+### Copy over Restart File NOTE Disable to not overwrite current restarts in the samples
+reset_restart = False
+
+### TPS (2D) Sample Directories
 # output_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_5/"
 # output_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_4s_1/"
 # output_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_LF_1_T2/"
 output_dir = f"{home}/bedonian1/tps2d_mf_r1_G3/"
 # output_dir = f"{home}/bedonian1/tps2d_time_test_2/"
-
-
-
-restart_fname = restart_file.split('/')[-1]
 
 ### Ability to process sample directories in chunks
 sample_start = 200
@@ -54,6 +58,7 @@ sample_limit = 250
 sample_list = None
 # sample_list = [1, 31]
 
+
 ### Time Step Sequence Options
 # dt_l = [1e-8, 1e-7, 1e-6, 1e-6, 2e-6]
 # nt_l = [60000, 5000, 60000, 30000, 40000]
@@ -66,7 +71,7 @@ nt_l = [40000, 10000, 50000, 50000, 50000]
 ##########################################################################################################
 # Script Starts Here
 ##########################################################################################################
-
+restart_fname = restart_file.split('/')[-1]
 
 formation_energy = {'Ar*': 1.114e6, # full lumped excited
                     'Ar.+1': 1520571.3883, # ionized
@@ -210,8 +215,8 @@ for sample in samples:
     # template['io']['outdirBase'] = output_dir + '/' + sample + '/output-torch'
 
     # copy the restart file
-    # DO NOT DO THIS, DO IT SEPARATELY!!!!
-    # shutil.copy2(restart_file, output_dir + '/' + sample)
+    if reset_restart:
+        shutil.copy2(restart_file, output_dir + '/' + sample)
 
     # manage restarts, find most current restart file
     # template['io']['restartBase'] = output_dir + '/' + sample + '/' + restart_fname

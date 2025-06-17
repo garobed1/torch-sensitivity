@@ -11,11 +11,20 @@ import bsr.ionization_cs as bsr_ion
 
 
 home = os.getenv('HOME')
+
+### Input and Output Directories
 sample_dir = home + "/torch-chemistry/argon/results/test_stepwise_2/"
 res_dir = "../results/test_stepwise_2/"
-plt.rcParams["font.size"] = 16
 
-# number of principal components to examine in sensitivity analysis
+### Plot Options
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "serif",
+    "font.serif": ["Palatino"],
+    "font.size": 16,
+})
+
+### number of principal components to examine in sensitivity analysis
 N_T = 512
 N_pc = 1
 

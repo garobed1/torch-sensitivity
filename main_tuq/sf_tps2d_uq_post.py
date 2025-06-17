@@ -9,7 +9,7 @@ import configparser
 import shutil
 import scipy.constants as spc
 
-from tuq_util.sample_utils import *
+from util_tuq.sample_utils import *
 
 # sys.path.insert(0, '/g/g14/bedonian1/torch1d/')
 # from torch1d import *
@@ -35,9 +35,7 @@ def listdir_nocrash(path):
 
 home = os.getenv('HOME')
 
-# sample_in_dir = home + "/bedonian1/cross_section_samples_r7/"
-# sample_out_dir = home + "/bedonian1/torch1d_samples_r7/"
-# sample_out_dir = home + "/bedonian1/torch1d_resample_r7/"
+### TPS (2D) Sample Directories (Provide as List)
 # sample_out_dirs = [home + "/bedonian1/tps2d_mf_r1_pilot/",
 #                    home + "/bedonian1/tps2d_mf_r1_pilot_2/",
 #                    home + "/bedonian1/tps2d_mf_r1_pilot_3/",
@@ -51,45 +49,35 @@ infile_name = "/tps_axi2d_input.ini"
 # res_dir = home + "/bedonian1/tps2d_mf_post_r1_wdata/"
 res_dir = home + "/bedonian1/tps2d_mf_post_r1_G3/"
 
-# number of integration points along axisymmetric line
+### Number of integration points along axisymmetric line
 # NOTE: not the actual number of points along the exterior slice,
-# does nothing apparently
+# does nothing apparently, scheme will add node values along slice
 # time_avg = True
+n_integ = 300
+
+### Time Average (Don't use, not enough sampling)
 time_avg = False
 time_sum = 15 # have time steps every 0.05 seconds, we would probably want to run with a configuration that outputs more frequently to do this
-
-
 if time_avg:
     tf2 = time_sum
 else:
     tf2 = 1
 
-n_integ = 300
 
-if len(sys.argv) > 2:
-    res_dir = sys.argv[1]
-    sample_out_dirs = list(sys.argv[2:])
-
-# if len(sys.argv) > 3:
-#     fstep = int(sys.argv[3])
-
-# deal with heat dep later
+### Outputs to Process
+# NOTE need to implement heat dep
 # out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'heat_dep']
 out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'exit_E']
 # out_qoi = ['exit_E']
 
-# soldata.array_names:
-# ['CpMix', 'Qt', 'Rmix', 'Sjoule', 'Yn_Ar', 
-# 'Yn_Ar.+1', 'Yn_Ar_h', 'Yn_Ar_m', 'Yn_Ar_p', 'Yn_Ar_r', 'Yn_E', 
-# 'density', 'distance', 'emission', 'epsilon_rad', 'kappa', 'mu', 'muT', 
-# 'pressure', 'resolution', 'sigma', 'sponge', 'swirl', 
-# 'temperature', 'velocity', 'wall_dist', 'weff', 'attribute']
-qoi_tps = ['temperature', 'pressure', 'velocity', 'density', 'Yn_Ar.+1',
-            'Yn_Ar_m', 'Yn_Ar_r', 'Yn_Ar_p', 'Yn_Ar_h', 'Yn_E']
-# get Yn_E to get electron density
+### Command Line Override
+if len(sys.argv) > 2:
+    res_dir = sys.argv[1]
+    sample_out_dirs = list(sys.argv[2:])
+# if len(sys.argv) > 3:
+#     fstep = int(sys.argv[3])
 
-
-
+### Plot Options (Not Implemented)
 make_plots = True
 plt.rcParams.update({
     "text.usetex": True,
@@ -97,6 +85,20 @@ plt.rcParams.update({
     "font.serif": ["Palatino"],
     "font.size": 15,
 })
+
+# soldata.array_names:
+# ['CpMix', 'Qt', 'Rmix', 'Sjoule', 'Yn_Ar', 
+# 'Yn_Ar.+1', 'Yn_Ar_h', 'Yn_Ar_m', 'Yn_Ar_p', 'Yn_Ar_r', 'Yn_E', 
+# 'density', 'distance', 'emission', 'epsilon_rad', 'kappa', 'mu', 'muT', 
+# 'pressure', 'resolution', 'sigma', 'sponge', 'swirl', 
+# 'temperature', 'velocity', 'wall_dist', 'weff', 'attribute']
+# qoi_tps = ['temperature', 'pressure', 'velocity', 'density', 'Yn_Ar.+1',
+#             'Yn_Ar_m', 'Yn_Ar_r', 'Yn_Ar_p', 'Yn_Ar_h', 'Yn_E']
+# get Yn_E to get electron density
+
+##########################################################################################################
+# Script Starts Here
+##########################################################################################################
 
 
 # size = 3
@@ -311,17 +313,6 @@ if 1:
             for k in range(qoi_sizes[qoi]):
                 qoi_val_r[qoi][c,k] = np.mean(qdat[qoi][k])
                 # breakpoint()
-            # X_ion_t.append(qoi_val_r['exit_X'][c,0])
-        
-        # plt.plot(sol.time_values, X_ion_t)
-        # plt.savefig("xion_over_time_tps.png")
-        # plt.clf()
-        # breakpoint()
-                # print(int_numer)
-                # print(work2)
-        # breakpoint()
-
-
         c += 1
 
 

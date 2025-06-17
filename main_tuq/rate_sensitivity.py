@@ -6,9 +6,9 @@ import pandas as pd
 import h5py as h5
 import scipy.constants as spc
 
-from tuq_util.sample_utils import *
-from tuq_util.sobol_tools import *
-from tuq_util.pca_tools import *
+from util_tuq.sample_utils import *
+from util_tuq.sobol_tools import *
+from util_tuq.pca_tools import *
 
 """
 Script for sensitivity analysis of rate expansion coefficients to torch1d outputs
@@ -23,24 +23,29 @@ sf_torch1d_uq_post.py
 """
 
 
+
+
+home = os.getenv('HOME')
+
+### Input and Output Directories
+in_dir = home + "/bedonian1/torch1d_resample_sens_r8/"
+out_dir = home + "/bedonian1/torch1d_post_sens_r8/"
+
+### Reaction Types to analyze
+reaction_types_fwd = ['Excitation', 'Ionization', 'StepExcitation']
+
+### Plot Options
 plt.rcParams.update({
     "text.usetex": True,
     "font.family": "serif",
     "font.serif": ["Palatino"],
     "font.size": 16,
 })
-
-home = os.getenv('HOME')
-in_dir = home + "/bedonian1/torch1d_resample_sens_r8/"
-out_dir = home + "/bedonian1/torch1d_post_sens_r8/"
-
-reaction_types_fwd = ['Excitation', 'Ionization', 'StepExcitation']
 reaction_types_fwd_to_label = {
     'Excitation': 'Excitation', 
     'Ionization': 'Ionization', 
     'StepExcitation': 'Step. Exc.'
 }
-
 prate_to_label = {
     'Ground': r'Ground',
     'meta': r'Ar$^m$',
@@ -55,7 +60,6 @@ prate_to_label = {
     'fourp_higher': r'Ar$^{4p}$ to Ar$^h$'
     
 }
-
 qoi_to_label = {
     'exit_v': "Exit Velocity",
     'exit_X': "Exit Fraction",
@@ -66,9 +70,7 @@ qoi_to_label = {
     'heat_dep': "Heat Deposition"
 }
 
-perturb_samples_A = {}
-perturb_samples_B = {}
-
+### Group Prefix, shouldn't change
 groups = ['A', 'B', 'AB']
 
 
@@ -76,6 +78,8 @@ groups = ['A', 'B', 'AB']
 # Script Starts Here
 ##########################################################################################################
 
+perturb_samples_A = {}
+perturb_samples_B = {}
 
 # load in inputs to get variable info
 for rtype in reaction_types_fwd:

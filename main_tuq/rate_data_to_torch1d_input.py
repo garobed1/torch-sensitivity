@@ -12,9 +12,10 @@ samples in .h5 format
 
 home = os.environ["HOME"]
 
+
+### Torch1D Input File Template
 # template_file = "torch1d_argon_sample_config_template.yml"
 # template_file = f"{home}/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/axial_icp_torch.yml"
-
 template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml"
 # template_file = f"{home}/bedonian1/mean_r6_coarse/torch1d_input_r.yml"
 # template_file = f"{home}/bedonian1/mean_r6_coarse_mf/torch1d_input_r.yml"
@@ -24,6 +25,7 @@ template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml"
 # template_file = f"{home}/bedonian1/mean_r6_coarse/torch1d_input_r.yml"
 # template_file = f"{home}/bedonian1/mean_r6_fine/torch1d_input_r.yml"
 
+### Rate Samples
 # sample_dir = f"{home}/bedonian1/cross_section_samples_r1/"
 # sample_dir = f"{home}/bedonian1/cross_section_samples_r3/"
 # sample_dir = f"{home}/bedonian1/cross_section_samples_r7_1/"
@@ -32,7 +34,6 @@ template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml"
 # sample_dir = f"{home}/bedonian1/test_spoof/"
 # sample_dir = f"{home}/bedonian1/torch1d_resample_sens_r8/"
 # sample_dir = f"{home}/bedonian1/cross_section_samples_r6/"
-
 # sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot/"
 # sample_dir = f"{home}/bedonian1/rate_mf_r1_G1/"
 sample_dir = f"{home}/bedonian1/rate_mf_r1_G2/"
@@ -40,6 +41,7 @@ sample_dir = f"{home}/bedonian1/rate_mf_r1_G2/"
 # sample_dir = f"{home}/bedonian1/rate_mf_r1_G3/"
 # sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot_4s/"
 
+### Torch1D Sample Directory
 # output_dir = f"{home}/bedonian1/torch1d_samples_r1/"
 # output_dir = f"{home}/bedonian1/torch1d_samples_r6_3/"
 # output_dir = f"{home}/bedonian1/torch1d_samples_r7_1/"
@@ -48,7 +50,6 @@ sample_dir = f"{home}/bedonian1/rate_mf_r1_G2/"
 # output_dir = f"{home}/bedonian1/torch1d_resample_sens_r8/"
 # output_dir = f"{home}/bedonian1/torch1d_samples_r3_no_4p_to_h/"
 # output_dir = f"{home}/bedonian1/torch1d_samples_r3_no_4p_to_h_dt/"
-
 # output_dir = f"{home}/bedonian1/torch1d_r1_pilot/"
 # output_dir = f"{home}/bedonian1/torch1d_r1_pilot_coarse/"
 # output_dir = f"{home}/bedonian1/torch1d_r1_pilot_fine/"
@@ -64,6 +65,7 @@ sample_dir = f"{home}/bedonian1/rate_mf_r1_G2/"
 # output_dir = f"{home}/bedonian1/torch1d_r1_G4_mid/"
 output_dir = f"{home}/bedonian1/torch1d_r1_G2_mid/"
 
+### NOTE Debug, Ignore 
 no4phigher = False
 
 ##########################################################################################################

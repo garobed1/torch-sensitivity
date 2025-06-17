@@ -6,10 +6,10 @@ import scipy.constants as spc
 import pickle
 from mpi4py import MPI
 
-from tuq_util.rate_utils import *
-from tuq_util.sample_utils import *
-from tuq_util.sobol_tools import *
-from tuq_util.pca_tools import *
+from util_tuq.rate_utils import *
+from util_tuq.sample_utils import *
+from util_tuq.sobol_tools import *
+from util_tuq.pca_tools import *
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -18,17 +18,25 @@ size = comm.Get_size()
 """
 Equivalent to sample_cross_sections.py in torch-chemistry, except we get forward rates
 by resampling KL models, then compute backward rates
+
+
+
 """
 
-#NOTE: Trying 4 species now
 
 home = os.getenv('HOME')
+
+### KL Model Directory
 # kl_model_dir = 'results/rate_resample_r7/'
 kl_model_dir = home + "/bedonian1/rate_resample_model_r8/"
 # kl_model_dir = home + "/bedonian1/rate_resample_model_4s_r8/"
+
+### Nominal Rate Directory
 # nom_dir = home + "/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/"
 # nom_dir = home + "/mean_4s_r6/"
 nom_dir = home + "/mean_r6/"
+
+### Rate Sample Result Directory
 # res_dir = home + "/bedonian1/torch1d_resample_sens_r7/"
 # res_dir = home + "/bedonian1/rate_mf_r1_pilot/"
 # res_dir = home + "/bedonian1/rate_mf_r1_pilot_4s/"
@@ -37,10 +45,11 @@ res_dir = home + "/bedonian1/rate_mf_r1_G1/"
 # res_dir = home + "/bedonian1/rate_mf_r1_G3/"
 # res_dir = home + "/bedonian1/rate_mf_r1_G4/"
 
+### Lump to Four Species
 four_species = False
 # four_species = True
 
-#### SAMPLING INPUTS ####
+### SAMPLING INPUTS
 # Generate some artificial distributions for every considered cross section
 Nsamples = 50000
 # Nsamples = 100
@@ -49,10 +58,15 @@ Nsamples = 50000
 # Nsamples = 256 # tentative covariance estimation sample 
 # Nsamples = 4
 
+### Number of Temperature Points
 N_T = 512
-pc_threshold = 1.0 - 1.e-2 #coarse
-# pc_threshold = 1.0 - 1.e-4 
-pc_proc = 0 # if muKL, 0 means both processes, 1 onward places threshold on that process' spectrum
+
+### Threshold for inclusion of terms in KL expansion
+pc_threshold = 1.0 - 1.e-2 #coarse, 99%
+# pc_threshold = 1.0 - 1.e-4  99.99%
+
+### if muKL, 0 means both processes, 1 onward places threshold on that process' spectrum
+pc_proc = 0 
 
 
 # sample_exc = True

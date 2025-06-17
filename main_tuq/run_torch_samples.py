@@ -5,7 +5,7 @@ from file_util import t1dRestart
 from mpi4py import MPI
 import sys
 
-from tuq_util.sample_utils import *
+from util_tuq.sample_utils import *
 
 
 comm = MPI.COMM_WORLD
@@ -28,42 +28,54 @@ python torch1d.py input_file.yml
 
 """
 
-# r7
+
 home = os.environ["HOME"]
+
+
+
+### Torch1D Sample Directory
 # sample_dir = f"{home}/bedonian1/torch1d_samples_r3"
 # sample_dir = f"{home}/bedonian1/torch1d_samples_r3_no_4p_to_h"
 # sample_dir = f"{home}/bedonian1/torch1d_samples_r3_no_4p_to_h_dt"
 # sample_dir = f"{home}/bedonian1/torch1d_samples_r6_3" # initial state evolved from the mean of all rate samples after 0.015 s, to 0.115 s
 sample_dir = f"{home}/bedonian1/torch1d_samples_r7_1" # initial state evolved from the mean of all rate samples after 0.015 s, to 0.115 s
+
+### Torch1D Input File Template
 # template_file = f"{home}/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/axial_icp_torch.yml" # keep this to deal with restarts
 # template_file = f"{home}/bedonian1/nominal_r6/torch1d_input_r.yml" # keep this to deal with restarts
 template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml" # keep this to deal with restarts
 
-if len(sys.argv) > 1:
-    sample_dir = sys.argv[1]
 
+
+### Manually set the final time step 
 # fstep_over = None
 fstep_over = 70000 #override, this should be the final time step
 
-# non 7 species case, also specify fstep_over
+
+### Command Line Override
+if len(sys.argv) > 1:
+    sample_dir = sys.argv[1]
 if len(sys.argv) > 3:
     sample_dir = sys.argv[1]
     template_file = sys.argv[2]
     fstep_over = int(sys.argv[3])
 
+### Torch1D Run Commands
 torch1d_exec = f"{home}/torch1d/torch1d.py"
 restart = True # enable restart from stopped state
 pcomm = 'python3.11'
 
 
 
+
+
+##########################################################################################################
+# Script Starts Here
+##########################################################################################################
+
+
 def listdir_nopickle(path):
     return [f for f in os.listdir(path) if not f.endswith('.pickle')]
-
-
-
-
-
 
 
 
@@ -78,13 +90,13 @@ prefix = torch1d_in_temp['prefix']
 if fstep_over is not None:
     fstep = fstep_over
 
-######### Loop through sample directories in sample_dir
+# Loop through sample directories in sample_dir
 # samples = os.listdir(sample_dir)
 samples = listdir_nopickle(sample_dir)
 samples.sort()
 
 
-# NOTE: REMOVE THIS
+# NOTE: DEBUG
 # samples = samples[-512:]
 # samples = samples[-512:-256]
 # samples = samples[11400:11776]

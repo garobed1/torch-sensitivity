@@ -3,10 +3,9 @@ import matplotlib.pyplot as plt
 # import matplotlib.pylab as plt
 from mpi4py import MPI
 import os, sys
-from tuq_util.sample_utils import *
+from util_tuq.sample_utils import *
 
-sys.path.insert(0, '/g/g14/bedonian1/torch1d/')
-from torch1d import *
+
 import inputs
 from axial_torch import AxialTorch
 
@@ -26,6 +25,7 @@ def listdir_nocrash(path):
 
 home = os.getenv('HOME')
 
+### Torch1D Sample Directories
 # sample_in_dir = home + "/bedonian1/cross_section_samples_r7/"
 # sample_out_dir = home + "/bedonian1/torch1d_samples_r7/"
 # sample_out_dir = home + "/bedonian1/torch1d_resample_r7/"
@@ -34,13 +34,21 @@ sample_out_dir = home + "/bedonian1/torch1d_r1_pilot/"
 template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml" # keep this to deal with restarts
 infile_name = "/torch1d_input.yml"
 res_dir = home + "/bedonian1/t1d_time_testing/"
+
+### Set your path to torch1d for import
+t1d_path = '/g/g14/bedonian1/torch1d/'
 # res_dir = home + "/bedonian1/torch1d_re_post_r7/"
 
+### Index of exit, and final time step
 qoi_ind = -1
 # use this state as the "final" time step
 fstep = 70000 
 # fstep = 25000
 
+### Outputs to Process
+out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'heat_dep']
+
+### Command Line Override
 if len(sys.argv) > 2:
     sample_out_dir = sys.argv[1]
     res_dir = sys.argv[2]
@@ -53,13 +61,10 @@ if len(sys.argv) > 4:
     qoi_ind = int(sys.argv[4])
 
 
-out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'heat_dep']
-
-
-
-# if true, skip cases that haven't reached the final time step
+### if true, skip cases that haven't reached the final time step
 skip_incomplete = False
 
+### Plot Options
 make_plots = False
 plt.rcParams.update({
     "text.usetex": True,
@@ -68,6 +73,17 @@ plt.rcParams.update({
     "font.size": 15,
 })
 
+
+
+
+##########################################################################################################
+# Script Starts Here
+##########################################################################################################
+
+
+### Get Torch1d Import
+sys.path.insert(0, t1d_path)
+from torch1d import *
 
 # size = 3
 # clist = os.listdir(sample_out_dir)

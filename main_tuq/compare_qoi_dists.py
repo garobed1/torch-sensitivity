@@ -17,19 +17,47 @@ cross section model
 
 
 home = os.getenv('HOME')
-res_names = ['xsection samples', 'KL model resamples']
+
 res_dirs = [home + "/bedonian1/torch1d_post_r7/", home + "/bedonian1/torch1d_re_post_r7/"]
 
 
+res_names = ['xsection samples', 'KL model resamples']
+
+### Include Kernel Density Estimate
 kde = True
 
+
+### Plot Options
 plt.rcParams.update({
     "text.usetex": True,
     "font.family": "serif",
     "font.serif": ["Palatino"],
     "font.size": 22,
 })
+qoi_labels = {
+    "exit_p": ['Exit Pressure', r'$p$ ($Pa$)', r'$P(p)$'],
+    "exit_d": ['Exit Density', r'$\rho$ ($kg/m^3$)', r'$P(\rho)$'],
+    "exit_v": ['Exit Axial Velocity', r'$u_z$ ($m/s$)', r'$P(u_z)$'],
+    "exit_T": ['Exit Temperature', r'$T$ ($K$)', r'$P(T)$'],
+    "exit_X": ['Exit Mole Fraction (log)', r'$X$', r'$P(X)$'],
+    "heat_dep": ['Heat Deposition', r'$q_e$ ($kW/m$)', r'$P(q_e)$']
+}
 
+qoi_legends = {
+    "exit_p": [''],
+    "exit_d": ['(Ar)', '(e)'],
+    "exit_v": [''],
+    "exit_T": ['(Ar)', '(e)'],
+    "exit_X": ['(Ar$^+$)', '(Ar$^m$)', '(Ar$^r$)', '(Ar$^p$)', '(Ar$^h$)' ],
+    "heat_dep": ['']
+}
+dist_label = {
+    0: "Cross-section propagation",
+    1: "Rate model propagation",
+}
+
+
+###
 mask = {}
 qoi_vals = {}
 for r, res in enumerate(res_names):
@@ -59,11 +87,15 @@ for r, res in enumerate(res_names):
 # breakpoint()
     # for qoi in fqoin:
         
-# start with histogram
 
-# OVERRIDE
+### QOI LIST OVERRIDE
 qoi_list = ['exit_v', 'exit_T', 'exit_X']
 
+
+
+##########################################################################################################
+# Script Starts Here
+##########################################################################################################
 nFig = 0
 qoi_num = {}
 for qoi in qoi_list:
@@ -73,35 +105,7 @@ for qoi in qoi_list:
 
 fig, axs = plt.subplots(nFig, figsize=(12,5. * nFig))
 
-
-qoi_labels = {
-    "exit_p": ['Exit Pressure', r'$p$ ($Pa$)', r'$P(p)$'],
-    "exit_d": ['Exit Density', r'$\rho$ ($kg/m^3$)', r'$P(\rho)$'],
-    "exit_v": ['Exit Axial Velocity', r'$u_z$ ($m/s$)', r'$P(u_z)$'],
-    "exit_T": ['Exit Temperature', r'$T$ ($K$)', r'$P(T)$'],
-    "exit_X": ['Exit Mole Fraction (log)', r'$X$', r'$P(X)$'],
-    "heat_dep": ['Heat Deposition', r'$q_e$ ($kW/m$)', r'$P(q_e)$']
-}
-
-qoi_legends = {
-    "exit_p": [''],
-    "exit_d": ['(Ar)', '(e)'],
-    "exit_v": [''],
-    "exit_T": ['(Ar)', '(e)'],
-    "exit_X": ['(Ar$^+$)', '(Ar$^m$)', '(Ar$^r$)', '(Ar$^p$)', '(Ar$^h$)' ],
-    "heat_dep": ['']
-}
-
-dist_label = {
-    0: "Cross-section propagation",
-    1: "Rate model propagation",
-}
-
-##########################################################################################################
-# Script Starts Here
-##########################################################################################################
-
-
+# start with histogram
 cq = 0
 for qoi in qoi_list:
 

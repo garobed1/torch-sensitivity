@@ -6,9 +6,9 @@ import pandas as pd
 import h5py as h5
 import scipy.constants as spc
 
-from tuq_util.sample_utils import *
-from tuq_util.sobol_tools import *
-from tuq_util.pca_tools import *
+from util_tuq.sample_utils import *
+from util_tuq.sobol_tools import *
+from util_tuq.pca_tools import *
 
 """
 NOTE: This script is superceded by resample_rates.py
