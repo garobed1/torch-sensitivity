@@ -41,13 +41,34 @@ home = os.getenv('HOME')
 #                    home + "/bedonian1/tps2d_mf_r1_pilot_3/",
 #                    home + "/bedonian1/tps2d_mf_r1_pilot_4/",
 #                    home + "/bedonian1/tps2d_mf_r1_pilot_5/"]
-sample_out_dirs = [home + "/bedonian1/tps2d_mf_r1_G3/"]
-template_file = f"{home}/bedonian1/mean_r6/r_lomach.torch.reacting.ini" # keep this to deal with restarts
-infile_name = "/tps_axi2d_input.ini"
+# sample_out_dirs = [home + "/bedonian1/tps2d_mf_r1_G3/"]
+# sample_out_dirs = [home + "/bedonian1/tps2d_mf_r1_pilot_LF_fix/"]
+# sample_out_dirs = [home + "/bedonian1/tps2d_mf_r1_pilot_LF_fix_2/"]
+# sample_out_dirs = [home + "/bedonian1/tps2d_mf_r1_pilot_LF_fix_3/"]
+# sample_out_dirs = [home + "/bedonian1/tps2d_mf_r1_pilot_LFUP/"]
+# sample_out_dirs = [home + "/bedonian1/tps2d_mf_r1_pilot_LFUPP3/"]
+# sample_out_dirs = [home + "/bedonian1/mean_tps2d_TESTLF/"]
+# sample_out_dirs = [home + "/bedonian1/mean_tps2d_INLET/"]
+# sample_out_dirs = [home + "/bedonian1/mean_tps2d_INLETP3/"]
+# sample_out_dirs = [home + "/bedonian1/mean_tps2d_UP_INLETP3/"]
+sample_out_dirs = [home + "/bedonian1/mean_tps2d_UP_INLET/"]
+# template_file = f"{home}/bedonian1/mean_tps2d_LF_r6/lomach.torch.reacting.ini" # keep this to deal with restarts
+# template_file = f"{home}/bedonian1/mean_tps2d_TESTLF/lomach.torch.reacting.ini" # keep this to deal with restarts
+# template_file = f"{home}/bedonian1/mean_tps2d_UP_INLET/lomach.sample.torch.reacting.ini" # keep this to deal with restarts
+template_file = f"{home}/bedonian1/mean_tps2d_UP_INLETP3/lomach.sample.torch.reacting.ini" # keep this to deal with restarts
+# infile_name = "/tps_axi2d_input.ini"
+infile_name = "/lomach.torch.reacting.ini"
 # res_dir = home + "/bedonian1/tps2d_mf_post_r1_far/"
 # res_dir = home + "/bedonian1/tps2d_mf_post_r1_massflux_core/"
 # res_dir = home + "/bedonian1/tps2d_mf_post_r1_wdata/"
-res_dir = home + "/bedonian1/tps2d_mf_post_r1_G3/"
+# res_dir = home + "/bedonian1/tps2d_mf_post_r1_G3/"
+# res_dir = home + "/bedonian1/tps2d_mf_post_r1_pilot_LF_fix/"
+# res_dir = home + "/bedonian1/tps2d_mf_post_r1_pilot_LF_fix_3/"
+# res_dir = home + "/bedonian1/tps2d_mf_post_r1_pilot_LFUP/"
+# res_dir = home + "/bedonian1/tps2d_mf_post_r1_pilot_LFUPP3/"
+res_dir = home + "/bedonian1/dummy/"
+# single_case = False
+single_case = True
 
 ### Number of integration points along axisymmetric line
 # NOTE: not the actual number of points along the exterior slice,
@@ -57,7 +78,7 @@ n_integ = 300
 
 ### Time Average (Don't use, not enough sampling)
 time_avg = False
-time_sum = 15 # have time steps every 0.05 seconds, we would probably want to run with a configuration that outputs more frequently to do this
+time_sum = 18 # have time steps every 0.05 seconds, we would probably want to run with a configuration that outputs more frequently to do this
 if time_avg:
     tf2 = time_sum
 else:
@@ -67,7 +88,8 @@ else:
 ### Outputs to Process
 # NOTE need to implement heat dep
 # out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'heat_dep']
-out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'exit_E']
+# out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'exit_E']
+out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'exit_E', 'exit_mdot', 'inlet_mdot']
 # out_qoi = ['exit_E']
 
 ### Command Line Override
@@ -78,7 +100,7 @@ if len(sys.argv) > 2:
 #     fstep = int(sys.argv[3])
 
 ### Plot Options (Not Implemented)
-make_plots = True
+make_plots = False
 plt.rcParams.update({
     "text.usetex": True,
     "font.family": "serif",
@@ -103,17 +125,21 @@ plt.rcParams.update({
 
 # size = 3
 # clist = os.listdir(sample_out_dir)
-clist = []
-for out_dir in sample_out_dirs:
-    clist_c = listdir_nopickle(out_dir)
-    for item in clist_c:
-        clist.append(out_dir + item)
-    
-clist.sort()
+if not single_case:
+    clist = []
+    for out_dir in sample_out_dirs:
+        clist_c = listdir_nopickle(out_dir)
+        for item in clist_c:
+            clist.append(out_dir + item)
+        
+    clist.sort()
+else:
+    clist = [sample_out_dirs[0]]
 # breakpoint()
 
 
-N = len(clist)
+# N = len(clist)
+N = 48
 
 
 cases = np.array_split(np.arange(N), size)
@@ -128,8 +154,11 @@ exit_r = 0.0151
 exit_l = 0.3405
 # exit_l = 0.14 - xdiff
 # exit_l = 0.340
+inlet_r = 0.0281
 exit_coords = np.array([[0, exit_l, 0],
                 [exit_r, exit_l, 0]   ])
+inlet_coords = np.array([[0, 1e-10, 0],
+                [inlet_r, 1e-10, 0]   ])
 
 
 qoi_sizes = {
@@ -139,6 +168,8 @@ qoi_sizes = {
     'exit_T': 2,
     'exit_X': 5,
     'exit_E': 1,
+    'exit_mdot': 1,
+    'inlet_mdot': 1,
     'heat_dep': 1
 }
 
@@ -185,7 +216,8 @@ if 1:
 
     c = 0
     for c_ind in cases[rank]:
-    # for c_ind in [40, 41, 42, 43, 44, 45]:
+    # for c_ind in cases[rank][:-2]:
+    # for c_ind in [1]:
 
         c_dir = clist[c_ind]
         c_inf = c_dir + infile_name
@@ -227,8 +259,15 @@ if 1:
 
             # exit_line = pv.Spline(exit_coords, n_integ)
             exit_line = pv.Line(exit_coords[0], exit_coords[1], n_integ)
+            inlet_line = pv.Line(inlet_coords[0], inlet_coords[1], n_integ)
             sold = solg.slice_along_line(exit_line)
             soldata = sold['Block-00']
+            inld = solg.slice_along_line(inlet_line)
+            inldata = inld['Block-00']
+            inlsortinds = np.argsort(inldata.points[:,0], axis=0)
+            inldata.points = inldata.points[inlsortinds,:]
+            inldata['velocity'] = inldata['velocity'][inlsortinds,:]
+            inldata['density']  = inldata['density'][inlsortinds]
 
             qoi_data_r = {}
             for qoi in out_qoi:
@@ -256,10 +295,13 @@ if 1:
                 if qoi == "exit_E":
                     CP = float(args['species/species1']['perfect_mixture/constant_molar_cp'])
                     qoi_data_r[qoi] = [soldata['temperature']*spc.R*CP/0.039948] # /argon molar density
-
-
+                if qoi == "exit_mdot":
+                    qoi_data_r[qoi] = [len(soldata['temperature'])*[1.0]]
+                if qoi == "inlet_mdot":
+                    qoi_data_r[qoi] = [len(inldata['temperature'])*[1.0]]
             # get mask for the points actually within the extent of the outlet
             mask = [0] + [x for x in range(1, soldata.points.shape[0]) if soldata.points[x-1,0] < exit_r]
+            maskinl = [0] + [x for x in range(1, inldata.points.shape[0]) if inldata.points[x-1,0] < inlet_r]
 
             # precompute denominator
             # int_denom = np.pi*exit_r*exit_r
@@ -274,47 +316,80 @@ if 1:
                 int_denom += work
             int_denom *= 2*np.pi
 
-            # now area average integrate all qoi
+            # now mass weight integrate all qoi
             for qoi in out_qoi:
-                for k in range(len(qoi_data_r[qoi])):
-                    
-                    # area average
-                    # isum = 0
-                    # for i in range(len(mask) - 1):
-                    #     # 2 pi r h(r) dr rings by trapezoid
-                    #     work = (qoi_data_r[qoi][k][i] + qoi_data_r[qoi][k][i+1])/2.
-                    #     work *= (soldata.points[i,0] + soldata.points[i+1,0])/2.
-                    #     # work = (qoi_data_r[qoi][k][i]*soldata.points[i,0] + qoi_data_r[qoi][k][i+1]*soldata.points[i+1,0])/2.
-                    #     work *= (soldata.points[i+1,0] - soldata.points[i,0])
-                    #     isum += work
+                if "exit_mdot" in qoi:
+                    for k in range(len(qoi_data_r[qoi])):
+                        isum = 0
+                        for i in range(len(mask) - 1):
+                            work = (qoi_data_r[qoi][k][i]*soldata.points[i,0]*soldata['velocity'][i,1]*soldata['density'][i] + 
+                                    qoi_data_r[qoi][k][i+1]*soldata.points[i+1,0]*soldata['velocity'][i+1,1]*soldata['density'][i+1])/2.
+                            work *= (soldata.points[i+1,0] - soldata.points[i,0])
+                            isum += work
+                        work2 = isum*2*np.pi
+                        qdat[qoi][k].append(work2)
+                elif "inlet_mdot" in qoi:
+                    for k in range(len(qoi_data_r[qoi])):
+                        isum = 0
+                        for i in range(len(maskinl) - 1):
+                            work = (qoi_data_r[qoi][k][i]*inldata.points[i,0]*inldata['velocity'][i,1]*inldata['density'][i] + 
+                                    qoi_data_r[qoi][k][i+1]*inldata.points[i+1,0]*inldata['velocity'][i+1,1]*inldata['density'][i+1])/2.
+                            work *= (inldata.points[i+1,0] - inldata.points[i,0])
+                            isum += work
+                        work2 = isum*2*np.pi
+                        qdat[qoi][k].append(work2)
+                else:
+                    for k in range(len(qoi_data_r[qoi])):
+                        # area average
+                        # isum = 0
+                        # for i in range(len(mask) - 1):
+                        #     # 2 pi r h(r) dr rings by trapezoid
+                        #     work = (qoi_data_r[qoi][k][i] + qoi_data_r[qoi][k][i+1])/2.
+                        #     work *= (soldata.points[i,0] + soldata.points[i+1,0])/2.
+                        #     # work = (qoi_data_r[qoi][k][i]*soldata.points[i,0] + qoi_data_r[qoi][k][i+1]*soldata.points[i+1,0])/2.
+                        #     work *= (soldata.points[i+1,0] - soldata.points[i,0])
+                        #     isum += work
 
-                    # # res = np.trapz(qoi_data_r[qoi][k][mask], x=soldata.points[mask,0])
-                    # work2 = (isum*2*np.pi)/int_denom
-                    # qoi_val_r[qoi][c,k] = work2
+                        # # res = np.trapz(qoi_data_r[qoi][k][mask], x=soldata.points[mask,0])
+                        # work2 = (isum*2*np.pi)/int_denom
+                        # qoi_val_r[qoi][c,k] = work2
 
-                    # mass-flux average??
-                    isum = 0
-                    for i in range(len(mask) - 1):
-                        # 2 pi r h(r) dr rings by trapezoid
-                        # work = (qoi_data_r[qoi][k][i]*soldata['velocity'][i,1]*soldata['density'][i] + 
-                        #         qoi_data_r[qoi][k][i+1]*soldata['velocity'][i+1,1]*soldata['density'][i+1])/2.
-                        # work *= (soldata.points[i,0] + soldata.points[i+1,0])/2.
-                        work = (qoi_data_r[qoi][k][i]*soldata.points[i,0]*soldata['velocity'][i,1]*soldata['density'][i] + 
-                                qoi_data_r[qoi][k][i+1]*soldata.points[i+1,0]*soldata['velocity'][i+1,1]*soldata['density'][i+1])/2.
-                        work *= (soldata.points[i+1,0] - soldata.points[i,0])
-                        isum += work
+                        # mass-flux average??
+                        isum = 0
+                        for i in range(len(mask) - 1):
+                            # 2 pi r h(r) dr rings by trapezoid
+                            # work = (qoi_data_r[qoi][k][i]*soldata['velocity'][i,1]*soldata['density'][i] + 
+                            #         qoi_data_r[qoi][k][i+1]*soldata['velocity'][i+1,1]*soldata['density'][i+1])/2.
+                            # work *= (soldata.points[i,0] + soldata.points[i+1,0])/2.
+                            work = (qoi_data_r[qoi][k][i]*soldata.points[i,0]*soldata['velocity'][i,1]*soldata['density'][i] + 
+                                    qoi_data_r[qoi][k][i+1]*soldata.points[i+1,0]*soldata['velocity'][i+1,1]*soldata['density'][i+1])/2.
+                            work *= (soldata.points[i+1,0] - soldata.points[i,0])
+                            isum += work
 
-                    # res = np.trapz(qoi_data_r[qoi][k][mask], x=soldata.points[mask,0])
-                    int_numer = isum*2*np.pi
-                    work2 = int_numer/int_denom
-                    qdat[qoi][k].append(work2)
+                        # res = np.trapz(qoi_data_r[qoi][k][mask], x=soldata.points[mask,0])
+                        int_numer = isum*2*np.pi
+                        work2 = int_numer/int_denom
+                        qdat[qoi][k].append(work2)
 
         for qoi in out_qoi:
             for k in range(qoi_sizes[qoi]):
                 qoi_val_r[qoi][c,k] = np.mean(qdat[qoi][k])
                 # breakpoint()
+        breakpoint()
         c += 1
 
+        # plot exit_T over time
+        if make_plots:
+            T_t = []
+            for x in range(time_sum):
+                T_t.append(qdat['exit_T'][0][x])
+
+            plt.plot(sol.time_values[-time_sum:], T_t)
+            plt.savefig("T_over_time_tps2d_5.png")
+            plt.clf()
+            breakpoint()
+
+    
 
     for qoi in out_qoi:
         qoi_val[qoi] = np.zeros([N, qoi_sizes[qoi]])
@@ -327,7 +402,7 @@ if 1:
     #     filename = res_dir + f'/qoi_samples_{group}.pickle' 
     # else:
     filename = res_dir + '/qoi_samples.pickle' 
-
+    
     if rank == 0:
         with open(filename, 'wb') as f:
 
@@ -337,4 +412,4 @@ if 1:
 
             pickle.dump(out_qoi, f)
 
-    # breakpoint()
+    breakpoint()

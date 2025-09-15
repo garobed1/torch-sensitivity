@@ -1,7 +1,9 @@
 #!/bin/bash
 #SBATCH -N 1
 #SBATCH -n 112
+##SBATCH -t 6:30:00
 #SBATCH -t 1:00:00
+##SBATCH -p pbatch
 #SBATCH -p pdebug
 #SBATCH --mail-type=ALL
 #SBATCH -o output.%j              #Output file name
@@ -11,8 +13,8 @@
 
 
 # creates automatic checkpoints and automatically starts from the most recent checkpoint
-cd ~/bedonian1/mean_tps2d_LF_r6/
-srun ~/tps/src/tps --runFile oldmesh_lomach.torch.reacting.ini
+cd /g/g14/bedonian1/bedonian1/mean_tps2d_INLETP3_COPY/mean_tps2d_INLETP3_NOTURB
+srun ~/tps/src/tps --runFile lomach.torch.reacting.ini
 # when finished, replace small timestep infile with large timestep infile
 
 

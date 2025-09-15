@@ -12,39 +12,60 @@ samples in .h5 format, same as torch1d
 
 
 """
-
+# NOTE: Might want to redo P3 ones too, with SUPG
 
 home = os.environ["HOME"]
 
 ### TPS (2D) Input File Template
 # template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml"
-template_file = f"{home}/bedonian1/mean_tps2d_r6/lomach.torch.reacting.ini"
+# template_file = f"{home}/bedonian1/mean_tps2d_r6/lomach.torch.reacting.ini"
 # template_file = f"{home}/bedonian1/mean_tps2d_4s_r6/lomach.torch.reacting.ini"
 # template_file = f"{home}/bedonian1/mean_tps2d_LF_r6/lomach.torch.reacting.ini"
 # template_file = f"{home}/bedonian1/mean_tps2d_r6/r_lomach.torch.reacting.ini"
+# current order 1 sample file
+# template_file = f"{home}/bedonian1/mean_tps2d_TESTLF/lomach.torch.reacting.ini"
+# template_file = f"{home}/bedonian1/mean_tps2d_BLCHLF/lomach.torch.reacting.ini"
+# template_file = f"{home}/bedonian1/mean_tps2d_UP_INLET/lomach.sample.torch.reacting.ini"
+template_file = f"{home}/bedonian1/mean_tps2d_UP_INLETP3/lomach.sample.torch.reacting.ini"
 
 ### Rate Samples
-# sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot/"
+sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot/"
 # sample_dir = f"{home}/bedonian1/rate_mf_r1_pilot_4s/"
-sample_dir = f"{home}/bedonian1/rate_mf_r1_G3/"
+# sample_dir = f"{home}/bedonian1/rate_mf_r1_G3/"
 
 ### Restart File Template
-restart_file = f"{home}/bedonian1/mean_tps2d_r6/restart_output-torch.sol.h5"
+# restart_file = f"{home}/bedonian1/mean_tps2d_r6/restart_output-torch.sol.h5"
 # restart_file = f"{home}/bedonian1/mean_tps2d_4s_r6/restart_output-torch.sol.h5"
 # restart_file = f"{home}/bedonian1/mean_tps2d_LF_r6/restart_output-torch.sol.h5"
+# restart_file = f"{home}/bedonian1/mean_tps2d_LF_r6/unrun_restart_output-torch.sol.h5"
+# restart_file = f"{home}/bedonian1/mean_tps2d_TESTLF/restart_output-torch.sol.h5"
+# restart_file = f"{home}/bedonian1/mean_tps2d_BLCHLF/restart_output-torch.sol.h5"
+# restart_file = f"{home}/bedonian1/mean_tps2d_INLET/steady_restart_output-torch.sol.h5"
+# restart_file = f"{home}/bedonian1/mean_tps2d_UP_INLET/steady_restart_output-torch.sol.h5"
+restart_file = f"{home}/bedonian1/mean_tps2d_UP_INLETP3/steady_restart_output-torch.sol.h5"
+
+
+# inlet_dir = f"{home}/bedonian1/mean_tps2d_UP_INLET/inputs"
+inlet_dir = f"{home}/bedonian1/mean_tps2d_UP_INLETP3/inputs"
 
 ### Copy over Restart File NOTE Disable to not overwrite current restarts in the samples
-reset_restart = False
+# reset_restart = False
+reset_restart = True
 
 ### TPS (2D) Sample Directories
 # output_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_5/"
 # output_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_4s_1/"
-# output_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_LF_1_T2/"
-output_dir = f"{home}/bedonian1/tps2d_mf_r1_G3/"
+# output_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_LF_fix/"
+# output_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_LF_fix_2/"
+# output_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_LF_fix_3/"
+# output_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_LFinlet/"
+# output_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_LFUP/"
+output_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_LFUPP3/"
+# output_dir = f"{home}/bedonian1/tps2d_mf_r1_G3/"
 # output_dir = f"{home}/bedonian1/tps2d_time_test_2/"
 
 ### Ability to process sample directories in chunks
-sample_start = 200
+sample_start = 0
 # sample_limit = 8
 # sample_start = 8
 # sample_limit = 16
@@ -53,8 +74,8 @@ sample_start = 200
 # sample_start = 32
 # sample_limit = 48
 # sample_start = 48
-# sample_limit = 64
-sample_limit = 250
+sample_limit = 64
+# sample_limit = 250
 sample_list = None
 # sample_list = [1, 31]
 
@@ -62,11 +83,17 @@ sample_list = None
 ### Time Step Sequence Options
 # dt_l = [1e-8, 1e-7, 1e-6, 1e-6, 2e-6]
 # nt_l = [60000, 5000, 60000, 30000, 40000]
-dt_l = [1e-8, 1e-7, 1e-6, 1e-6, 1e-6]
-nt_l = [40000, 10000, 50000, 50000, 50000]
+# dt_l = [1e-8, 1e-7, 1e-6, 1e-6, 1e-6]
+# nt_l = [40000, 10000, 50000, 50000, 50000]
 # FOR LF
 # dt_l = [1e-8, 1e-7, 1e-6, 1e-6, 1e-6]
 # nt_l = [110000, 10000, 50000, 50000, 50000]
+# dt_l = [1e-8, 1e-7, 1e-6]
+# nt_l = [10000, 10000, 200000]
+# dt_l = [1e-6, 1e-6, 1e-6]
+# nt_l = [200000, 200000, 200000]
+dt_l = [1e-6, 1e-6, 1e-6]
+nt_l = [60000, 60000, 60000]
 
 ##########################################################################################################
 # Script Starts Here
@@ -216,8 +243,10 @@ for sample in samples:
 
     # copy the restart file
     if reset_restart:
-        shutil.copy2(restart_file, output_dir + '/' + sample)
+        shutil.copy2(restart_file, output_dir + '/' + sample + '/restart_output-torch.sol.h5')
 
+    # copy the inlet profile (individual, in case we sample them differently)
+    shutil.copytree(inlet_dir, output_dir + '/' + sample + '/inputs')#, dirs_exist_ok=True)
     # manage restarts, find most current restart file
     # template['io']['restartBase'] = output_dir + '/' + sample + '/' + restart_fname
 

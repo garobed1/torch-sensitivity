@@ -146,7 +146,7 @@ if not is_indep:
 N_pc['Ionization']['Ground'] = [2, 2, 2]
 
 print(N_pc)
-# breakpoint()
+breakpoint()
 
 qe = spc.e    # 1.60217663e-19 [C]
 kB = spc.k    # 1.380649e-23 [J/K]
