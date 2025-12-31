@@ -1,5 +1,5 @@
 from scipy.stats.qmc import scale
-from scipy.stats import norm, uniform, beta, lognorm, truncnorm
+from scipy.stats import norm, uniform, beta, lognorm, truncnorm, foldnorm
 import numpy as np
 from util_tuq.sobol_tools import *
 from util_tuq.mc_tools import *
@@ -11,7 +11,8 @@ dist_map = {
     "uniform": uniform,
     "beta": beta,
     "lognormal": lognorm,
-    "tnormal": truncnorm
+    "tnormal": truncnorm,
+    "fnormal": foldnorm
 }
 
 #------------------------------------------------------------------------------
@@ -91,7 +92,6 @@ class SampleData():
 
     def createData(self, N, scale=None, method='sobol'):
 
-        
         # scale is dict
         if scale is not None and self.scales is None:
             self.scales = scale
@@ -388,23 +388,43 @@ def transformDist(x, dist, loc, scale, a=None, b=None):
 
     # if a is not None and b is not None:
     #     x_s = dist_map[dist].ppf(x, loc=loc, scale=scale, a=a, b=b)
-    if a is not None and b is None:
-        if dist == 'normal':
-            x_s = dist_map["tnormal"].ppf(x, loc=loc, scale=scale, a=(a - loc) / scale, b=np.inf)
-        else: # assuming it's beta
-            x_s = dist_map[dist].ppf(x, loc=loc, scale=scale, a=a, b=np.inf)
-    elif b is not None and a is None:
-        if dist == 'normal':
-            x_s = dist_map["tnormal"].ppf(x, loc=loc, scale=scale, a=-np.inf, b=(b - loc) / scale)
-        else: # assuming it's beta
-            x_s = dist_map[dist].ppf(x, loc=loc, scale=scale, a=-np.inf, b=b)
-    elif a is not None and b is not None:
-        if dist == 'normal':
-            x_s = dist_map["tnormal"].ppf(x, loc=loc, scale=scale, a=(a - loc) / scale, b=(b - loc) / scale)
-        else: # assuming it's beta
-            x_s = dist_map[dist].ppf(x, loc=loc, scale=scale, a=a, b=b)
+    if a is None:
+        a_use = -np.inf
     else:
-        x_s = dist_map[dist].ppf(x, loc=loc, scale=scale)
+        a_use = a
+    if b is None:
+        b_use = np.inf
+    else:
+        b_use = b
+
+    if dist == 'normal':
+        if a_use is None and b_use is None:
+            x_s = dist_map[dist].ppf(x, loc=loc, scale=scale)
+        else: # truncated normal
+            x_s = dist_map["tnormal"].ppf(x, loc=loc, scale=scale, a=(a - loc) / scale, b=(b_use - loc) / scale)
+    elif dist == 'fnormal': # c is the mean of the unfolded distribution, take as a, loc is the fold
+        assert a_use is not None, "Unfolded mean required for folded normal distribution specification"
+        x_s = dist_map[dist].ppf(x, (a_use - loc)/scale, loc=loc, scale=scale)
+    else: # assume beta
+        x_s = dist_map[dist].ppf(x, loc=loc, scale=scale, a=a_use, b=b_use)
+
+    # if a is not None and b is None:
+    #     if dist == 'normal':
+    #         x_s = dist_map["tnormal"].ppf(x, loc=loc, scale=scale, a=(a - loc) / scale, b=np.inf)
+    #     else: # assuming it's beta
+    #         x_s = dist_map[dist].ppf(x, loc=loc, scale=scale, a=a, b=np.inf)
+    # elif b is not None and a is None:
+    #     if dist == 'normal':
+    #         x_s = dist_map["tnormal"].ppf(x, loc=loc, scale=scale, a=-np.inf, b=(b - loc) / scale)
+    #     else: # assuming it's beta
+    #         x_s = dist_map[dist].ppf(x, loc=loc, scale=scale, a=-np.inf, b=b)
+    # elif a is not None and b is not None:
+    #     if dist == 'normal':
+    #         x_s = dist_map["tnormal"].ppf(x, loc=loc, scale=scale, a=(a - loc) / scale, b=(b - loc) / scale)
+    #     else: # assuming it's beta
+    #         x_s = dist_map[dist].ppf(x, loc=loc, scale=scale, a=a, b=b)
+    # else:
+    #     x_s = dist_map[dist].ppf(x, loc=loc, scale=scale)
     
     return x_s
     
@@ -431,3 +451,42 @@ def divide_cases(ncases, nprocs):
         data[idx].append(j)
 
     return data
+
+if __name__ == "__main__":
+
+
+    fold = 2. # fold location
+
+
+    sigma = 3.
+    #sigma = 2.
+    #sigma = 1.5 # unfolded sigma
+
+    nmean = 8. # unfolded mean
+
+    Ns = 1000
+
+    # transform for shape parameter
+    c = (nmean - fold)/sigma# - np.sqrt(sigma)
+
+    # "lbound" is c``
+    distprop = {"dist":"fnormal", "model":False, "loc":fold, "scale": sigma, "lbound": [nmean]}
+
+    data = SampleData(['test'], {'test': 1}, {'test': distprop})
+    data.createData(Ns)
+
+    # samples
+    x_s = data.data['test'][0]
+
+    # plot trunc norm dist
+    x = np.linspace(0., 15., 10000)
+    p = foldnorm.pdf(x, c, loc=fold, scale=sigma)
+    # p = foldnorm.pdf(x, 1.5, loc=1, scale=1)
+
+    from matplotlib import pyplot as plt
+    plt.plot(x, p, 'k')
+    plt.hist(x_s, density=True, bins=20)
+
+    plt.savefig("foldnorm.png", bbox_inches="tight")
+
+    # breakpoint()
