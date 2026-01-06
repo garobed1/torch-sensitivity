@@ -435,7 +435,6 @@ def transformDist(x, dist, loc, scale, a=None, b=None):
     #         x_s = dist_map[dist].ppf(x, loc=loc, scale=scale, a=a, b=b)
     # else:
     #     x_s = dist_map[dist].ppf(x, loc=loc, scale=scale)
-    breakpoint()
     return x_s
     
 
@@ -466,40 +465,40 @@ if __name__ == "__main__":
 
     from matplotlib import pyplot as plt
 
-    # fold = 2. # fold location
+    fold = 2. # fold location
 
 
-    # sigma = 3.
-    # #sigma = 2.
-    # #sigma = 1.5 # unfolded sigma
+    sigma = 3.
+    #sigma = 2.
+    #sigma = 1.5 # unfolded sigma
 
-    # nmean = 8. # unfolded mean
+    nmean = 8. # unfolded mean
 
-    # Ns = 1000
+    Ns = 1000
 
-    # # transform for shape parameter
-    # c = (nmean - fold)/sigma# - np.sqrt(sigma)
+    # transform for shape parameter
+    c = (nmean - fold)/sigma# - np.sqrt(sigma)
 
-    # # "lbound" is c``
-    # distprop = {"dist":"fnormal", "model":False, "loc":fold, "scale": sigma, "lbound": [nmean]}
+    # "lbound" is c``
+    distprop = {"dist":"fnormal", "model":False, "loc":fold, "scale": sigma, "lbound": [nmean]}
 
-    # data = SampleData(['test'], {'test': 1}, {'test': distprop})
-    # data.createData(Ns)
+    data = SampleData(['test'], {'test': 1}, {'test': distprop})
+    data.createData(Ns)
 
-    # # samples
-    # x_s = data.data['test'][0]
+    # samples
+    x_s = data.data['test'][0]
 
-    # # plot trunc norm dist
-    # x = np.linspace(0., 15., 10000)
-    # p = foldnorm.pdf(x, c, loc=fold, scale=sigma)
-    # # p = foldnorm.pdf(x, 1.5, loc=1, scale=1)
+    # plot trunc norm dist
+    x = np.linspace(0., 15., 10000)
+    p = foldnorm.pdf(x, c, loc=fold, scale=sigma)
+    # p = foldnorm.pdf(x, 1.5, loc=1, scale=1)
 
-    # plt.plot(x, p, 'k')
-    # plt.hist(x_s, density=True, bins=20)
+    plt.plot(x, p, 'k')
+    plt.hist(x_s, density=True, bins=20)
 
-    # plt.savefig("foldnorm.png", bbox_inches="tight")
+    plt.savefig("foldnorm.png", bbox_inches="tight")
 
-    # plt.clf()
+    plt.clf()
 
     # also test reverse direction
     fold = 10. # fold location
@@ -527,7 +526,7 @@ if __name__ == "__main__":
 
     # plot trunc norm dist
     x = np.linspace(0., 15., 10000)
-    p = foldnorm.pdf(x, c, loc=fold, scale=sigma)
+    p = foldnorm.pdf(x, -c, loc=fold, scale=sigma) 
     # p = foldnorm.pdf(x, 1.5, loc=1, scale=1)
 
     plt.plot(x, p, 'k')
