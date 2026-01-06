@@ -357,17 +357,20 @@ def uniformToDist(data, scales, inds):
         if "lbound" not in scale_info.keys():
             scale_info["lbound"] = len(ind)*[None]
 
+        if "rbound" not in scale_info.keys():
+            scale_info["rbound"] = len(ind)*[None]
+
         if isinstance(scale_info["loc"], list):
             for i in range(len(ind)):
 
                 data_s[ind[i], :] = transformDist(data[ind[i], :], 
-                                scale_info['dist'], scale_info['loc'][i], scale_info['scale'][i], scale_info["lbound"][i])
+                                scale_info['dist'], scale_info['loc'][i], scale_info['scale'][i], scale_info["lbound"][i], scale_info["rbound"][i])
 
         else: # apply same dist to all variables in category
 
             for i in range(len(ind)):
                 data_s[ind[i], :] = transformDist(data[ind[i], :], 
-                                scale_info['dist'], scale_info['loc'], scale_info['scale'], scale_info['lbound'][0])
+                                scale_info['dist'], scale_info['loc'], scale_info['scale'], scale_info['lbound'][0], scale_info["rbound"][0])
                 
     return data_s
 
@@ -403,8 +406,15 @@ def transformDist(x, dist, loc, scale, a=None, b=None):
         else: # truncated normal
             x_s = dist_map["tnormal"].ppf(x, loc=loc, scale=scale, a=(a - loc) / scale, b=(b_use - loc) / scale)
     elif dist == 'fnormal': # c is the mean of the unfolded distribution, take as a, loc is the fold
-        assert a_use is not None, "Unfolded mean required for folded normal distribution specification"
-        x_s = dist_map[dist].ppf(x, (a_use - loc)/scale, loc=loc, scale=scale)
+        assert a_use > -np.inf, "Unfolded mean required for folded normal distribution specification"
+        if b_use < np.inf:
+            b_use = b
+        else:
+            b_use = 1
+
+        x_s = dist_map[dist].ppf(x, b_use*(a_use - loc)/scale, loc=loc, scale=scale)
+        if b_use < 0:
+            x_s = -x_s + 2.0*loc 
     else: # assume beta
         x_s = dist_map[dist].ppf(x, loc=loc, scale=scale, a=a_use, b=b_use)
 
@@ -425,7 +435,7 @@ def transformDist(x, dist, loc, scale, a=None, b=None):
     #         x_s = dist_map[dist].ppf(x, loc=loc, scale=scale, a=a, b=b)
     # else:
     #     x_s = dist_map[dist].ppf(x, loc=loc, scale=scale)
-    
+    breakpoint()
     return x_s
     
 
@@ -454,15 +464,51 @@ def divide_cases(ncases, nprocs):
 
 if __name__ == "__main__":
 
+    from matplotlib import pyplot as plt
 
-    fold = 2. # fold location
+    # fold = 2. # fold location
 
 
-    sigma = 3.
+    # sigma = 3.
+    # #sigma = 2.
+    # #sigma = 1.5 # unfolded sigma
+
+    # nmean = 8. # unfolded mean
+
+    # Ns = 1000
+
+    # # transform for shape parameter
+    # c = (nmean - fold)/sigma# - np.sqrt(sigma)
+
+    # # "lbound" is c``
+    # distprop = {"dist":"fnormal", "model":False, "loc":fold, "scale": sigma, "lbound": [nmean]}
+
+    # data = SampleData(['test'], {'test': 1}, {'test': distprop})
+    # data.createData(Ns)
+
+    # # samples
+    # x_s = data.data['test'][0]
+
+    # # plot trunc norm dist
+    # x = np.linspace(0., 15., 10000)
+    # p = foldnorm.pdf(x, c, loc=fold, scale=sigma)
+    # # p = foldnorm.pdf(x, 1.5, loc=1, scale=1)
+
+    # plt.plot(x, p, 'k')
+    # plt.hist(x_s, density=True, bins=20)
+
+    # plt.savefig("foldnorm.png", bbox_inches="tight")
+
+    # plt.clf()
+
+    # also test reverse direction
+    fold = 10. # fold location
+
+    sigma = 1.5
     #sigma = 2.
     #sigma = 1.5 # unfolded sigma
 
-    nmean = 8. # unfolded mean
+    nmean = 7. # unfolded mean
 
     Ns = 1000
 
@@ -470,7 +516,8 @@ if __name__ == "__main__":
     c = (nmean - fold)/sigma# - np.sqrt(sigma)
 
     # "lbound" is c``
-    distprop = {"dist":"fnormal", "model":False, "loc":fold, "scale": sigma, "lbound": [nmean]}
+    # "rbound" is 1 or -1, indicates direction
+    distprop = {"dist":"fnormal", "model":False, "loc":fold, "scale": sigma, "lbound": [nmean], "rbound": [-1]}
 
     data = SampleData(['test'], {'test': 1}, {'test': distprop})
     data.createData(Ns)
@@ -483,10 +530,8 @@ if __name__ == "__main__":
     p = foldnorm.pdf(x, c, loc=fold, scale=sigma)
     # p = foldnorm.pdf(x, 1.5, loc=1, scale=1)
 
-    from matplotlib import pyplot as plt
     plt.plot(x, p, 'k')
     plt.hist(x_s, density=True, bins=20)
 
-    plt.savefig("foldnorm.png", bbox_inches="tight")
-
+    plt.savefig("foldnormrev.png", bbox_inches="tight")
     # breakpoint()
