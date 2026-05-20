@@ -2,16 +2,19 @@ import h5py as h5
 import numpy as np
 
 """
-Modify a tps restart file to include turbulent scalar quantities introduced by the K-e-zeta-f model
-
-k, epsilon, zeta, f, and mut
+Modify a zeta-f turbulent tps restart file to include compressible variables
 
 Setting all to default initial or minimum values prescribed in zetaModel.cpp
 """
 
 
-source_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_v2_hot_down1cm_zetaf/DEVCOLD_restart_output-torch-cold.sol.h5"
-result_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_v2_hot_down1cm_zetaf/DEVRAMP_restart_output-torch-ramp.sol.h5"
+# source_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_v2_hot_down1cm_zetaf/DEVCOLD_restart_output-torch-cold.sol.h5"
+# result_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_v2_hot_down1cm_zetaf/DEVRAMP_restart_output-torch-ramp.sol.h5"
+
+source_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_s3_hot_down1cm_zetaf_rm11/restart_output-torch-cold-v2-rm11-2-.sol.h5"
+result_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_s3_hot_down1cm_zetaf_rm11/restart_output-torch-hot-rm11-2-alpha-zeta-f.sol.h5"
+# source_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_s3_hot_down1cm_zetaf_rm10/restart_output-torch-cold-v2-rm10-2-.sol.h5"
+# result_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_s3_hot_down1cm_zetaf_rm10/restart_output-torch-hot-rm10-2-alpha-zeta-f.sol.h5"
 
 add_swirl = False
 

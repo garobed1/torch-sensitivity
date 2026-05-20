@@ -12,8 +12,13 @@ And copy over zeta f turbulent quantities
 # result_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_hot_down1cm_zetaf/DEVWQTKAPPA_6speciesM_restart_output-torch-hot-zeta-f-r2.sol.h5"
 # result_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_hot_down1cm_zetaf/DEVWQTKAPPA_6species3_restart_output-torch-hot-zeta-f-r2.sol.h5"
 # result_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_hot_down1cm_zetaf/DEVWQTKAPPA_7species_restart_output-torch-hot-zeta-f-r2.sol.h5"
-source_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_v2_hot_down1cm_zetaf/DEVRAMP8_restart_output-torch-kappa.sol.h5"
-result_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_v2_hot_down1cm_zetaf/DEVRAMP8_restart_output-torch-7sp.sol.h5"
+# source_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_v2_hot_down1cm_zetaf/DEVRAMP8_restart_output-torch-kappa.sol.h5"
+# result_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_v2_hot_down1cm_zetaf/DEVRAMP8_restart_output-torch-7sp.sol.h5"
+
+# source_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_s3_hot_down1cm_zetaf_rm10/restart_output-torch-hot-rm10-2-kappa-zeta-f.sol.h5"
+# result_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_s3_hot_down1cm_zetaf_rm10/DEV7_restart_output-torch-hot-rm10-2-7sp-noflow-zeta-f.sol.h5"
+source_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_s3_hot_down1cm_zetaf_rm11/restart_output-torch-hot-rm11-2-kappa-zeta-f.sol.h5"
+result_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_s3_hot_down1cm_zetaf_rm11/DEV6_restart_output-torch-hot-rm11-2-7sp-noqt-zeta-f.sol.h5"
 
 seven_species = True
 frac_init = 1e-10
