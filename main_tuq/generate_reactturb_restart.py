@@ -17,8 +17,10 @@ And copy over zeta f turbulent quantities
 
 # source_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_s3_hot_down1cm_zetaf_rm10/restart_output-torch-hot-rm10-2-kappa-zeta-f.sol.h5"
 # result_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_s3_hot_down1cm_zetaf_rm10/DEV7_restart_output-torch-hot-rm10-2-7sp-noflow-zeta-f.sol.h5"
-source_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_s3_hot_down1cm_zetaf_rm11/restart_output-torch-hot-rm11-2-kappa-zeta-f.sol.h5"
-result_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_s3_hot_down1cm_zetaf_rm11/DEV6_restart_output-torch-hot-rm11-2-7sp-noqt-zeta-f.sol.h5"
+# source_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_s3_hot_down1cm_zetaf_rm11/restart_output-torch-hot-rm11-2-kappa-zeta-f.sol.h5"
+# result_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_s3_hot_down1cm_zetaf_rm11/DEV6_restart_output-torch-hot-rm11-2-7sp-noqt-zeta-f.sol.h5"
+source_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/tps2d_zetaf_current_hotrun/DEVRAMP5_restart_output-torch-hot-kappa.sol.h5"
+result_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/tps2d_zetaf_current_hotrun/restart_output-torch-hot-7sp-noflow.sol.h5"
 
 seven_species = True
 frac_init = 1e-10

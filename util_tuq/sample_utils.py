@@ -142,9 +142,13 @@ class SampleData():
 
             im, ip = 0, 0
             for key, item in r_dict.items():
-                ip = im + self.getNDim(key)
-                add[r_ind[key], :] = add_raw[im:ip, :]
-                im = ip + 0
+                if self.scales[key]['dist'] == "func":
+                    res = np.array(self.scales[key]['model'](N))[:,:,0]
+                    add[r_ind[key], :] = res
+                else:
+                    ip = im + self.getNDim(key)
+                    add[r_ind[key], :] = add_raw[im:ip, :]
+                    im = ip + 0
 
             add = uniformToDist(add, r_dict, r_ind)
 
@@ -360,17 +364,21 @@ def uniformToDist(data, scales, inds):
         if "rbound" not in scale_info.keys():
             scale_info["rbound"] = len(ind)*[None]
 
-        if isinstance(scale_info["loc"], list):
+        if "loc" not in scale_info.keys():
             for i in range(len(ind)):
+                data_s[ind[i], :] = data[ind[i], :]
+        else:
+            if isinstance(scale_info["loc"], list):
+                for i in range(len(ind)):
 
-                data_s[ind[i], :] = transformDist(data[ind[i], :], 
-                                scale_info['dist'], scale_info['loc'][i], scale_info['scale'][i], scale_info["lbound"][i], scale_info["rbound"][i])
+                    data_s[ind[i], :] = transformDist(data[ind[i], :], 
+                                    scale_info['dist'], scale_info['loc'][i], scale_info['scale'][i], scale_info["lbound"][i], scale_info["rbound"][i])
 
-        else: # apply same dist to all variables in category
+            else: # apply same dist to all variables in category
 
-            for i in range(len(ind)):
-                data_s[ind[i], :] = transformDist(data[ind[i], :], 
-                                scale_info['dist'], scale_info['loc'], scale_info['scale'], scale_info['lbound'][0], scale_info["rbound"][0])
+                for i in range(len(ind)):
+                    data_s[ind[i], :] = transformDist(data[ind[i], :], 
+                                    scale_info['dist'], scale_info['loc'], scale_info['scale'], scale_info['lbound'][0], scale_info["rbound"][0])
                 
     return data_s
 
@@ -404,7 +412,7 @@ def transformDist(x, dist, loc, scale, a=None, b=None):
         if a_use is None and b_use is None:
             x_s = dist_map[dist].ppf(x, loc=loc, scale=scale)
         else: # truncated normal
-            x_s = dist_map["tnormal"].ppf(x, loc=loc, scale=scale, a=(a - loc) / scale, b=(b_use - loc) / scale)
+            x_s = dist_map["tnormal"].ppf(x, loc=loc, scale=scale, a=(a_use - loc) / scale, b=(b_use - loc) / scale)
     elif dist == 'fnormal': # c is the mean of the unfolded distribution, take as a, loc is the fold
         assert a_use > -np.inf, "Unfolded mean required for folded normal distribution specification"
         if b_use < np.inf:

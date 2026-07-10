@@ -51,13 +51,18 @@ home = os.getenv('HOME')
 # sample_out_dirs = [home + "/bedonian1/mean_tps2d_INLET/"]
 # sample_out_dirs = [home + "/bedonian1/mean_tps2d_INLETP3/"]
 # sample_out_dirs = [home + "/bedonian1/mean_tps2d_UP_INLETP3/"]
-sample_out_dirs = [home + "/bedonian1/mean_tps2d_UP_INLET/"]
+# sample_out_dirs = [home + "/bedonian1/mean_tps2d_UP_INLET/"]
+sample_out_dirs = [home + "/bedonian1/mean_tps2d_newmesh/tps2d_zetaf_current_hotrun/"]
 # template_file = f"{home}/bedonian1/mean_tps2d_LF_r6/lomach.torch.reacting.ini" # keep this to deal with restarts
 # template_file = f"{home}/bedonian1/mean_tps2d_TESTLF/lomach.torch.reacting.ini" # keep this to deal with restarts
 # template_file = f"{home}/bedonian1/mean_tps2d_UP_INLET/lomach.sample.torch.reacting.ini" # keep this to deal with restarts
-template_file = f"{home}/bedonian1/mean_tps2d_UP_INLETP3/lomach.sample.torch.reacting.ini" # keep this to deal with restarts
+# template_file = f"{home}/bedonian1/mean_tps2d_UP_INLETP3/lomach.sample.torch.reacting.ini" # keep this to deal with restarts
+# template_file = f"{home}/bedonian1/mean_tps2d_newmesh/tps2d_zetaf_current_hotrun/lomach.torch.hot.7sp_imp.zf.ini" # keep this to deal with restarts
+template_file = f"{home}/bedonian1/mean_tps2d_newmesh/tps2d_zetaf_current_hotrun/lomach.torch.hot.kappa2.zf.ini" # keep this to deal with restarts
 # infile_name = "/tps_axi2d_input.ini"
-infile_name = "/lomach.torch.reacting.ini"
+# infile_name = "/lomach.torch.reacting.ini"
+# infile_name = "/lomach.torch.hot.7sp_imp.zf.ini"
+infile_name = "/lomach.torch.hot.kappa2.zf.ini"
 # res_dir = home + "/bedonian1/tps2d_mf_post_r1_far/"
 # res_dir = home + "/bedonian1/tps2d_mf_post_r1_massflux_core/"
 # res_dir = home + "/bedonian1/tps2d_mf_post_r1_wdata/"
@@ -89,7 +94,8 @@ else:
 # NOTE need to implement heat dep
 # out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'heat_dep']
 # out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'exit_E']
-out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'exit_E', 'exit_mdot', 'inlet_mdot']
+# out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'exit_E', 'exit_mdot', 'inlet_mdot']
+out_qoi = ['exit_mdot', 'inlet_mdot']
 # out_qoi = ['exit_E']
 
 ### Command Line Override
@@ -151,14 +157,16 @@ xdiff = 0.0145
 exit_r = 0.0151
 # exit_l = 0.355
 # consider core to be at 0.14 on t1d, so 0.14 - 
-exit_l = 0.3405
+# exit_l = 0.3405
 # exit_l = 0.14 - xdiff
-# exit_l = 0.340
+exit_l = 0.340
 inlet_r = 0.0281
 exit_coords = np.array([[0, exit_l, 0],
                 [exit_r, exit_l, 0]   ])
-inlet_coords = np.array([[0, 1e-10, 0],
-                [inlet_r, 1e-10, 0]   ])
+# inlet_coords = np.array([[0, 1e-10, 0],
+#                 [inlet_r, 1e-10, 0]   ])
+inlet_coords = np.array([[0, 0.01+1e-2, 0],
+                [inlet_r, 0.01+1e-2, 0]   ])
 
 
 qoi_sizes = {
@@ -266,6 +274,7 @@ if 1:
             inldata = inld['Block-00']
             inlsortinds = np.argsort(inldata.points[:,0], axis=0)
             inldata.points = inldata.points[inlsortinds,:]
+            # breakpoint()
             inldata['velocity'] = inldata['velocity'][inlsortinds,:]
             inldata['density']  = inldata['density'][inlsortinds]
 
@@ -375,6 +384,11 @@ if 1:
             for k in range(qoi_sizes[qoi]):
                 qoi_val_r[qoi][c,k] = np.mean(qdat[qoi][k])
                 # breakpoint()
+
+        print("inlet mdot:")
+        print(qoi_val_r['inlet_mdot'][0])
+        print("exit mdot:")
+        print(qoi_val_r['exit_mdot'][0])
         breakpoint()
         c += 1
 

@@ -28,8 +28,10 @@ Setting all to default initial or minimum values prescribed in zetaModel.cpp
 # source_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_s3_hot_down1cm_zetaf_rm11/DEV1_restart_output-torch-hot-rm11-2-alpha-zeta-f.sol.h5"
 # result_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_s3_hot_down1cm_zetaf_rm11/DEV2_restart_output-torch-hot-rm11-2-alpha-zeta-f.sol.h5"
 
-source_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_v2_hot_down1cm_zetaf/BADTURB6_restart_output-torch-cold-v2-rm11-2-fine.sol.h5"
-result_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_v2_hot_down1cm_zetaf/restart_output-torch-cold-v2-rm11-2-fine.sol.h5"
+# source_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_v2_hot_down1cm_zetaf/BADTURB6_restart_output-torch-cold-v2-rm11-2-fine.sol.h5"
+# result_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/mean_tps2d_v2_hot_down1cm_zetaf/restart_output-torch-cold-v2-rm11-2-fine.sol.h5"
+source_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/tps2d_zetaf_current_hotrun/DEVRAMP_restart_output-torch-hot-alpha.sol.h5"
+result_restart = "/g/g14/bedonian1/bedonian1/mean_tps2d_newmesh/tps2d_zetaf_current_hotrun/restart_output-torch-hot-beta.sol.h5"
 
 add_swirl = False
 

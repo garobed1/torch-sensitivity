@@ -33,13 +33,14 @@ def listdir_nocrash(path):
 
 home = os.getenv('HOME')
 
-# source_file = "heated_Ar_3Dtorch_loMach/data.pvtu"
-# velname = 'velocity'
+source_file = home + "/bedonian1/tps3d_sols/heated_fT_dir_ArLoMach/mean_output/Cycle3000000/data.pvtu"
+velname = 'vari_velocity'
 
-source_file = home + "/meshes/fullTorch_cold_Field_Sigfried/data.pvtu"
-velname = 'rms'
+# source_file = home + "/meshes/fullTorch_cold_Field_Sigfried/data.pvtu"
+# velname = 'rms'
 
-res_file = "tke_3d.csv"
+# res_file = "tke_3d.csv"
+res_file = "tke_3d_hot.csv"
 
 ### Number of radial points to take averages for
 n_rad = 999
@@ -110,7 +111,7 @@ if 1:
 
         ### turbulent kinetic energy
         tke_line = 0.5*(sold[velname][:,0] + sold[velname][:,1] + sold[velname][:,2])
-        v2_line = sold[velname][:,0]*np.cos(angle) + sold[velname][:,2]*np.sin(angle)
+        v2_line = abs(sold[velname][:,0]*np.cos(angle) + sold[velname][:,2]*np.sin(angle))
 
         data_arrays["TKE"][:,s] = tke_line
         data_arrays["V2"][:,s] = v2_line
