@@ -1,10 +1,10 @@
 import os
 import yaml
 from subprocess import run
-from file_util import t1dRestart
+from util_tuq.file_util import t1dRestart
 import sys
 
-from sample_utils import *
+from util_tuq.sample_utils import *
 
 
 from mpi4py import MPI
@@ -30,7 +30,8 @@ home = os.environ["HOME"]
 # torch_dir = f"{home}/bedonian1/torch1d_samples_r7_1" # initial state evolved from the mean of all rate samples after 0.015 s, to 0.115 s
 # torch_dir = f"{home}/bedonian1/torch1d_resample_r7_coarse" # initial state evolved from the mean of all rate samples after 0.015 s, to 0.115 s
 # torch_dir = f"{home}/bedonian1/torch1d_resample_r7" # initial state evolved from the mean of all rate samples after 0.015 s, to 0.115 s
-torch_dir = f"{home}/bedonian1/torch1d_r1_G2_mid" 
+# torch_dir = f"{home}/bedonian1/torch1d_r1_G2_mid" 
+torch_dir = f"{home}/bedonian1/sample_torch1d_base" 
 # torch_dir = f"{home}/bedonian1/torch1d_resample_sens_r8/" 
 template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml" # keep this to deal with restarts
 
@@ -38,7 +39,7 @@ if len(sys.argv) > 1:
     sample_dir = sys.argv[1]
 
 ### Final Time Step, Set Manually
-fstep_over = 65000 #override, this should be the final time step
+fstep_over = 70000 #override, this should be the final time step
 restart = True # enable restart from stopped state
 pcomm = 'python3.11'
 
@@ -83,5 +84,5 @@ for isamp in cases[rank]:
 
 
 
-        run(["tar", "czf", sdir + "timesol.tar.gz"] + slist)
+    #     run(["tar", "czf", sdir + "timesol.tar.gz"] + slist)
         run(["rm"] + slist)

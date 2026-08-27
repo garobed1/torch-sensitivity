@@ -19,7 +19,7 @@ def estimateCovarianceEig(data, compute_scores = True):
     mean = np.mean(data, axis=1)
 
     data_c = (data.T - mean).T
-
+    # breakpoint()
     # compute SVD
     U, s, Vt = np.linalg.svd(data_c, full_matrices=False)
 

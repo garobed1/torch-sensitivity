@@ -11,7 +11,7 @@ from util_tuq.sobol_tools import *
 from util_tuq.pca_tools import *
 
 """
-NOTE: This script is superceded by resample_rates.py
+NOTE: This script precedes resample_rates.py and comes after sample_cross_sections.py
 
 Without performing sensitivity analysis, simply build KL expansions of the rate 
 samples
@@ -29,14 +29,18 @@ Check fraction for forward and backward separately, e.g.
 ### Input and Output Directories
 home = os.getenv('HOME')
 # sample_dirs = [home + "/bedonian1/cross_section_samples_r7/", home + "/bedonian1/cross_section_samples_r7_1/"]
-sample_dirs = [home + "/bedonian1/cross_section_samples_r8_1/", home + "/bedonian1/cross_section_samples_r8_2/"]
+# sample_dirs = [home + "/bedonian1/cross_section_samples_r8_1/", home + "/bedonian1/cross_section_samples_r8_2/"]
 # sample_dirs = [home + "/bedonian1/cross_section_4species_r8_1/", home + "/bedonian1/cross_section_4species_r8_2/"]
-nom_dir = home + "/bedonian1/mean_4s_r6/"
+sample_dirs = [home + "/bedonian1/cross_section_samples_GPR_BIG/"]
+# nom_dir = home + "/bedonian1/mean_torch1d_old/mean_4s_r6/"
+nom_dir = home + "/bedonian1/mean_torch1d_old/mean_r6_fine/"
 # res_dir = "../results/rate_resample_r8/"
 # res_dir = home + "/bedonian1/rate_resample_model_r8/"
 # res_dir = home + "/bedonian1/rate_resample_model_4s_r8/"
-res_dir = home + "/bedonian1/rate_resample_plots/"
-mean_dir = home + "/bedonian1/mean_4s_r6/"
+# res_dir = home + "/bedonian1/rate_resample_plots/"
+# res_dir = home + "/bedonian1/rate_resample_GPR_plots/"
+res_dir = home + "/bedonian1/rate_resample_GPR_dummy/"
+# mean_dir = home + "/bedonian1/mean_4s_r6/"
 
 ### Account for Crashed Runs
 # crashed_runs =[30, 76, 232, 370, 416, 444, 453, 526, 535, 592, 618, 703, 839, 1217, 1229, 1234, 1302, 1373, 1569, 1721, 1857, 2032, 2254, 2466, 2805]
@@ -62,9 +66,11 @@ reaction_types_full = ['Excitation', 'Deexcitation', 'Ionization', 'Recombinatio
 
 
 ### Plot Options
-make_plots = False
+make_plots = True
 # number of samples to plot
-Ndraw = 500
+# Ndraw = 500
+# Ndraw = 200
+Ndraw = 100
 clim = 20000
 plt.rcParams.update({
     "text.usetex": True,
@@ -280,7 +286,7 @@ if not os.path.exists(res_dir + "/full_rate.pickle"):
             o_name = sample_dir + "sig_{0}_{1:06d}/rates".format(s_data, c[s_data])
             # while os.path.isdir(o_name) or c[s_data] < clim:
             while os.path.isdir(o_name) and c[s_data] < clim:
-                print(f"Reading Sample: {c_f}")
+                # print(f"Reading Sample: {c_f}")
                 for rate in lumped_rates:
                     for rtype in reaction_types:
                         with h5.File("{0}/{1}_{2}.h5".format(o_name, rtype, rate), "r") as f:
@@ -343,6 +349,15 @@ label_dict = {'meta':'meta',
             'Lumped':'lumped'
 }
 
+### NOTE: excising bad outliers in higher
+h_inc = []
+for i in range(full_rate['Excitation']['higher'].shape[1]):
+    if full_rate['Excitation']['higher'][:,i][-1] < 1e12 and full_rate['Excitation']['fourp'][:,i][-1] < 1e10:
+        h_inc.append(i)
+    else:
+        print(str(full_rate['Excitation']['higher'][:,i][-1]) + " " + str(full_rate['Excitation']['fourp'][:,i][-1]))
+# breakpoint()
+
 if make_plots:
 
     upto = -1
@@ -351,51 +366,68 @@ if make_plots:
     # upto = 50
     for s_data in sample_labels:
 
-        for ptype in reaction_types_full:
-        # for ptype in ['Excitation']:
-            for rname in full_rate[ptype].keys():
+        # for ptype in reaction_types_full:
+        for ptype in ['Excitation', 'Deexcitation']:
+            # breakpoint()
+            # for rname in full_rate[ptype].keys():
+            # for rname in ['higher', 'meta', 'res', 'fourp']:
+            for rname in ['higher', 'meta']:
                 
                 # if ptype == 'Ionization' and rname == 'meta':
                 #     breakpoint()
                 # ptype = "Excitation"
                 # prate = "meta"
+                fac = 0
+                if (ptype == "Excitation" or ptype == "Deexcitation") and (rname == "higher" or rname == "fourp"):
+                    fac = c[s_data] - len(h_inc)
 
-                Nind = np.random.choice(c[s_data], Ndraw,  replace=False)
+                Nind = np.random.choice(c[s_data]-fac, Ndraw,  replace=False)
                 # breakpoint()
-                y_T = full_rate[ptype][rname][:,Nind][doto:upto,:]
-                y_B = full_rate[ptype][rname][:,crashed_runs][doto:upto,:]
-                y_N = nom_rate[ptype][rname][:,0][doto:upto]
+                if (ptype == "Excitation" or ptype == "Deexcitation") and (rname == "higher" or rname == "fourp"):
+                    y_T = full_rate[ptype][rname][:,h_inc][:,Nind][doto:upto,:]
+                    y_B = full_rate[ptype][rname][:,h_inc][:,crashed_runs][doto:upto,:]
+                    y_N = nom_rate[ptype][rname][:,0][doto:upto]
+                else:
+                    y_T = full_rate[ptype][rname][:,Nind][doto:upto,:]
+                    y_B = full_rate[ptype][rname][:,crashed_runs][doto:upto,:]
+                    y_N = nom_rate[ptype][rname][:,0][doto:upto]
                 # y_E = []
                 # for i in up_to:
                 #     y_E.append(mean[ptype][prate] + np.dot(scores[ptype][prate][:i, s], eigvec[ptype][prate][:,:i].T))
                 # y_M = mean[ptype][prate]
 
-                plt.plot([], [], label = "Samples",  color='r', alpha = 0.5)
-                plt.plot(T_Maxw[doto:upto], y_T, color='r', alpha = 0.5)
+                plt.plot([], [], label = rname,  color=col_dict[rname], linewidth = 1.0, alpha = 0.5, )
+                plt.plot(T_Maxw[doto:upto], y_T, color=col_dict[rname], linewidth = 1.0, alpha = 0.9)
                 # plt.plot([], [], label = f"Lumped {label_dict[rname]}",  color=col_dict[rname], alpha = 1.0)
                 # plt.plot(T_Maxw[doto:upto], y_T, color=col_dict[rname], alpha = 0.1)
-                plt.plot([], [], label = "Crashed",  color='b', alpha = 1.0)
-                plt.plot(T_Maxw[doto:upto], y_B, color='b', alpha = 1.0)
-                plt.plot(T_Maxw[doto:upto], y_N, label="Nominal")
+                # plt.plot([], [], label = "Crashed",  color='b', alpha = 1.0)
+                # plt.plot(T_Maxw[doto:upto], y_B, color='b', alpha = 1.0)
                 # for i in range(len(up_to)):
                 #     plt.plot(T_Maxw, y_E[i], label=f"Sample {s} (KL {up_to[i]})")
 
-                plt.xlabel(rf"$T$ [K]")
-                plt.ylabel(rf"$k_f$ [m$^3$ / mol / s]")
-                plt.yscale('log')
-                plt.grid()
+                ## Nominal rate
+                # plt.plot(T_Maxw[doto:upto], y_N, color='k')
+                
+                # plt.xlabel(rf"$T$ [K]")
+                # plt.ylabel(rf"$k_f$ [m$^3$ / mol / s]")
+                # plt.yscale('log')
+                # if ptype == "Excitation":
+                #     plt.ylim(bottom=1e-20)
+                # plt.grid()
                 # plt.legend()
-                plt.savefig(res_dir + f"plots/argon-{ptype}-{rname}-samples.pdf", bbox_inches='tight')
-                plt.clf()
+                # plt.savefig(res_dir + f"plots/argon-{ptype}-{rname}-samples.pdf", bbox_inches='tight')
+                # plt.clf()
 
-            # plt.xlabel(rf"$T$ [K]")
-            # plt.ylabel(rf"$k_f$ [m$^3$ / mol / s]")
-            # plt.yscale('log')
-            # plt.ylim([1e-7, 1e10])
-            # plt.grid()
-            # plt.legend()
-            # plt.savefig(res_dir + f"plots/argon-{ptype}-samples.png", dpi=600, bbox_inches='tight')
-            # plt.clf()
+            # plt.plot([], [], color='k', label="Nominal")
+            plt.xlabel(rf"$T$ [K]")
+            plt.ylabel(rf"$k_f$ [m$^3$ / mol / s]")
+            plt.yscale('log')
+            if ptype == "Excitation":
+                plt.ylim(bottom=1e-20, top=1e12)
+            plt.grid()
+            plt.legend()
+            plt.savefig(res_dir + f"plots/argon-{ptype}-total-samples.png", bbox_inches='tight', dpi=400)
+            plt.clf()
             # breakpoint()
 
 
@@ -484,11 +516,16 @@ else:
         # breakpoint()
         for rate in lumped_rates:
 
+            print("SVD for lumped " + rpair[0] + " " + rate)
             # Concatenate forward and backward rates
             fwd_bkw = np.append(full_rate[rpair[0]][rate], full_rate[rpair[1]][rate], axis=0)
             work = fwd_bkw
             if log_model:
                 work = np.log(fwd_bkw)
+
+            if (rref == "Excitation" or rref == "Deexcitation") and rate == "higher":
+                print("excluded samples")
+                work = work[:,h_inc]
             mean[rref][rate], eigval[rref][rate], eigvec[rref][rate], scores[rref][rate] = estimateCovarianceEig(work)
 
 

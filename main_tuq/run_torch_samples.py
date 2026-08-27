@@ -1,7 +1,7 @@
 import os
 import yaml
 from subprocess import run
-from file_util import t1dRestart
+from util_tuq.file_util import t1dRestart
 from mpi4py import MPI
 import sys
 
@@ -29,7 +29,8 @@ python torch1d.py input_file.yml
 """
 
 
-home = os.environ["HOME"]
+# home = os.environ["HOME"]
+home = os.getenv("HOME")
 
 
 
@@ -38,12 +39,13 @@ home = os.environ["HOME"]
 # sample_dir = f"{home}/bedonian1/torch1d_samples_r3_no_4p_to_h"
 # sample_dir = f"{home}/bedonian1/torch1d_samples_r3_no_4p_to_h_dt"
 # sample_dir = f"{home}/bedonian1/torch1d_samples_r6_3" # initial state evolved from the mean of all rate samples after 0.015 s, to 0.115 s
-sample_dir = f"{home}/bedonian1/torch1d_samples_r7_1" # initial state evolved from the mean of all rate samples after 0.015 s, to 0.115 s
+# sample_dir = f"{home}/bedonian1/torch1d_samples_r7_1" # initial state evolved from the mean of all rate samples after 0.015 s, to 0.115 s
+sample_dir = f"{home}/bedonian1/sample_torch1d_base" # initial state evolved from the mean of all rate samples after 0.015 s, to 0.115 s
 
 ### Torch1D Input File Template
 # template_file = f"{home}/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/axial_icp_torch.yml" # keep this to deal with restarts
 # template_file = f"{home}/bedonian1/nominal_r6/torch1d_input_r.yml" # keep this to deal with restarts
-template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml" # keep this to deal with restarts
+template_file = f"{home}/bedonian1/mean_torch1d_old/mean_r6/torch1d_input_r.yml" # keep this to deal with restarts
 
 
 
@@ -99,7 +101,7 @@ samples.sort()
 # NOTE: DEBUG
 # samples = samples[-512:]
 # samples = samples[-512:-256]
-# samples = samples[11400:11776]
+samples = samples[5600:15000]
 # remain = [1, 2, 5, 6, 9, 10, 14, 17, 21, 22, 25, 26, 29, 30, 33, 34, 37, 38, 41, 42, 46, 49, 53, 54, 57, 58, 61, 62, 65, 66, 69, 70, 73, 74, 78, 81, 85, 86, 89, 90, 93, 94, 97, 98, 101, 102, 105, 106, 110, 113, 117, 118, 121, 122, 126, 129, 133, 134, 137, 138, 142, 145, 149, 150, 153, 154, 157, 158, 161, 162, 165, 166, 169, 170, 174, 177, 181, 182, 185, 186, 190, 193, 194, 197, 198, 201, 202, 206, 209, 213, 214, 217, 218, 221, 222, 225, 226, 229, 230, 233, 234, 238, 241, 245, 246, 249, 250, 253, 254]
 # # remain = [11653,11658,11669,11685,11701,11706,11717,11722,11733,11738,11749,11754,11765,11770]
 # s2 = []
@@ -152,7 +154,28 @@ for isamp in cases[rank]:
         
 
         # run torch1d
-        run([pcomm, "torch1d.py", inputfile])
+        # run([pcomm, "torch1d.py", inputfile])
+        run([pcomm, torch1d_exec, inputfile], cwd=f'{home}/torch1d/')
+
+        # remove intermediate times
+        # sdir_out = sample_dir + '/' + sample + '/output/'
+
+        # slist = listdir_nopickle(sdir_out)
+
+        # try:
+        #     j = next(i for i in range(len(slist)) if f"{fstep_over}.h5" in slist[i])
+        #     slist.pop(j) # remove the final time solution
+        # except:
+        #     slist = None
+
+        # if slist:
+        #     for k in range(len(slist)):
+        #         slist[k] = sdir_out + slist[k]
+
+
+
+        # #     run(["tar", "czf", sdir + "timesol.tar.gz"] + slist)
+        #     run(["rm"] + slist)
 
 
 # comm.Barrier()

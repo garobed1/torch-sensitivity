@@ -16,25 +16,14 @@ home = os.environ["HOME"]
 
 
 ### TPS (2D) Sample Directories
-# sample_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_5/"
-# sample_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_4s_1/"
-# sample_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_LF_fix/"
-# sample_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_LF_fix_2/"
-# sample_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_LF_fix_3/"
-# sample_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_LFinlet/"
-# sample_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_LFUP/"
-sample_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_LFUPP3/"
-# sample_dir = f"{home}/bedonian1/tps2d_mf_r1_pilot_LF2_1_T2/"
-# sample_dir = f"{home}/bedonian1/tps2d_time_test_2/"
-# sample_dir = f"{home}/bedonian1/tps2d_mf_r1_G4/"
-# sample_dir = f"{home}/bedonian1/tps2d_mf_r1_G3/"
+sample_dir = f"{home}/bedonian1/sample_tps2d_base/"
 
 ### Template for Job Submission Script
 # base_script_path = "dane_scripts/run_tps2d_r1.sh"
 # base_script_path = "dane_scripts/run_tps2d_stage.sh"
 # base_script_path = "dane_scripts/run_tps2d_LF2_stage.sh"
 # base_script_path = "dane_scripts/run_tps2d_stage.sh"
-base_script_path = "dane_scripts/run_tps2d_stage0.sh"
+base_script_path = "dane_scripts/tps2d_samples/run_tps2d_stage0.sh"
 
 ### Job Submission Script Location
 # script_dir = f"{home}/bedonian1/tps2d_r1_batch_scripts_5/"
@@ -42,11 +31,12 @@ base_script_path = "dane_scripts/run_tps2d_stage0.sh"
 # script_dir = f"{home}/bedonian1/tps2d_r1_batch_scripts_LF_fix_3/"
 # script_dir = f"{home}/bedonian1/tps2d_r1_batch_scripts_LFinlet/"
 # script_dir = f"{home}/bedonian1/tps2d_r1_batch_scripts_LFUP/"
-script_dir = f"{home}/bedonian1/tps2d_r1_batch_scripts_LFUPP3/"
+# script_dir = f"{home}/bedonian1/tps2d_r1_batch_scripts_LFUPP3/"
 # script_dir = f"{home}/bedonian1/tps2d_r1_batch_scripts_4s_1/"
 # script_dir = f"{home}/bedonian1/tps2d_r1_batch_scripts_LF2_1_T2/"
 # script_dir = f"{home}/bedonian1/tps2d_time_test_scripts_2/"
 # script_dir = f"{home}/bedonian1/tps2d_r1_batch_scripts_G3/"
+script_dir = f"{home}/bedonian1/sample_tps2d_base_batch_scripts/"
 
 
 ### Names of Successive Input Files per Sample

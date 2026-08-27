@@ -145,6 +145,7 @@ class SampleData():
                 if self.scales[key]['dist'] == "func":
                     res = np.array(self.scales[key]['model'](N))[:,:,0]
                     add[r_ind[key], :] = res
+                    # print("samples for " +key)
                 else:
                     ip = im + self.getNDim(key)
                     add[r_ind[key], :] = add_raw[im:ip, :]

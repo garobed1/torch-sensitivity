@@ -10,6 +10,7 @@ import shutil
 import scipy.constants as spc
 
 from util_tuq.sample_utils import *
+from main_tuq.LOS_for_tps import getLOSeffect 
 
 # sys.path.insert(0, '/g/g14/bedonian1/torch1d/')
 # from torch1d import *
@@ -52,17 +53,14 @@ home = os.getenv('HOME')
 # sample_out_dirs = [home + "/bedonian1/mean_tps2d_INLETP3/"]
 # sample_out_dirs = [home + "/bedonian1/mean_tps2d_UP_INLETP3/"]
 # sample_out_dirs = [home + "/bedonian1/mean_tps2d_UP_INLET/"]
-sample_out_dirs = [home + "/bedonian1/mean_tps2d_newmesh/tps2d_zetaf_current_hotrun/"]
 # template_file = f"{home}/bedonian1/mean_tps2d_LF_r6/lomach.torch.reacting.ini" # keep this to deal with restarts
 # template_file = f"{home}/bedonian1/mean_tps2d_TESTLF/lomach.torch.reacting.ini" # keep this to deal with restarts
 # template_file = f"{home}/bedonian1/mean_tps2d_UP_INLET/lomach.sample.torch.reacting.ini" # keep this to deal with restarts
 # template_file = f"{home}/bedonian1/mean_tps2d_UP_INLETP3/lomach.sample.torch.reacting.ini" # keep this to deal with restarts
 # template_file = f"{home}/bedonian1/mean_tps2d_newmesh/tps2d_zetaf_current_hotrun/lomach.torch.hot.7sp_imp.zf.ini" # keep this to deal with restarts
-template_file = f"{home}/bedonian1/mean_tps2d_newmesh/tps2d_zetaf_current_hotrun/lomach.torch.hot.kappa2.zf.ini" # keep this to deal with restarts
 # infile_name = "/tps_axi2d_input.ini"
 # infile_name = "/lomach.torch.reacting.ini"
 # infile_name = "/lomach.torch.hot.7sp_imp.zf.ini"
-infile_name = "/lomach.torch.hot.kappa2.zf.ini"
 # res_dir = home + "/bedonian1/tps2d_mf_post_r1_far/"
 # res_dir = home + "/bedonian1/tps2d_mf_post_r1_massflux_core/"
 # res_dir = home + "/bedonian1/tps2d_mf_post_r1_wdata/"
@@ -71,9 +69,100 @@ infile_name = "/lomach.torch.hot.kappa2.zf.ini"
 # res_dir = home + "/bedonian1/tps2d_mf_post_r1_pilot_LF_fix_3/"
 # res_dir = home + "/bedonian1/tps2d_mf_post_r1_pilot_LFUP/"
 # res_dir = home + "/bedonian1/tps2d_mf_post_r1_pilot_LFUPP3/"
-res_dir = home + "/bedonian1/dummy/"
 # single_case = False
-single_case = True
+
+# single hotrun
+# sample_out_dirs = [home + "/bedonian1/mean_tps2d_newmesh/tps2d_zetaf_current_hotrun/"]
+# template_file = f"{home}/bedonian1/mean_tps2d_newmesh/tps2d_zetaf_current_hotrun/lomach.torch.hot.kappa2.zf.ini" # keep this to deal with restarts
+# infile_name = "/lomach.torch.hot.kappa2.zf.ini"
+# res_dir = home + "/bedonian1/dummy/"
+# single_case = True
+# out_qoi = ['exit_mdot', 'inlet_mdot']
+
+# current samples
+sample_out_dirs = [home + "/bedonian1/sample_tps2d_base/"]
+template_file = f"{home}/bedonian1/mean_tps2d_newmesh/tps2d_zetaf_current_TEMPLATE/lomach.sample.torch.7sp_hinlet.ini" # keep this to deal with restarts
+infile_name = "/tps_axi2d_input.ini"
+# res_dir = home + "/bedonian1/sample_tps2d_base_post/"
+res_dir = home + "/bedonian1/sample_tps2d_base_post_ELEC/"
+single_case = False
+# out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'exit_E', 'exit_mdot', 'inlet_mdot']
+# out_qoi = ['axial_v', 'axial_X', 'axial_d', 'axial_T', 'axial_E']
+out_qoi = ['axial_ne_LOS', 'axial_v', 'axial_X', 'axial_d', 'axial_T', 'axial_E']
+failed_cases = ('000384', '000349', '000393', '000449', '000197', '000129', '000029', '000030', '000409')
+
+# N = 48
+# N = 96
+# N = 491
+N = 224
+cases = np.array_split(np.arange(N), size)
+N_axi = 150
+
+# xdiff = 0.0145
+# radius at exit
+# exit_r = 0.01485
+# exit_r = 0.025
+# exit_l = 0.355
+# consider core to be at 0.14 on t1d, so 0.14 - 
+# exit_l = 0.3405
+# exit_l = 0.14 - xdiff
+exit_r = 0.0151
+exit_l = 0.340
+inlet_r = 0.0281
+step_r = 0.2426
+step_l = 0.124
+
+# get torch radius at axial location
+def rad_get(x):
+    if x >= 0.3:
+        return exit_r
+    elif x <= .123875:
+        return inlet_r
+    elif x > .123875 and x <= .13425:
+        return step_r
+    elif x > .13425 and x < .13425 + 0.014:
+        slope = (x - .13425)/0.014
+        return step_r + slope*(inlet_r - step_r)
+    else:
+        return inlet_r
+
+
+axi_range = [step_l - 0.078, step_l + 0.118]
+exit_coords = np.array([[0, exit_l, 0],
+                [exit_r, exit_l, 0]   ])
+# inlet_coords = np.array([[0, 1e-10, 0],
+#                 [inlet_r, 1e-10, 0]   ])
+inlet_coords = np.array([[0, 0.01+1e-2, 0],
+                [inlet_r, 0.01+1e-2, 0]   ])
+
+qoi_sizes = {
+    'exit_p': [1, 1], 
+    'exit_d': [2, 1], 
+    'exit_v': [1, 1],
+    'exit_T': [2, 1],
+    'exit_X': [5, 1],
+    'exit_E': [1, 1],
+    'exit_mdot': [1, 1],
+    'inlet_mdot': [1, 1],
+    'heat_dep': [1, 1],
+    'axial_p': [1, N_axi], 
+    'axial_d': [2, N_axi], 
+    'axial_v': [1, N_axi],
+    'axial_T': [2, N_axi],
+    'axial_X': [5, N_axi],
+    'axial_E': [1, N_axi],
+    'axial_ne_LOS': [1, N_axi]
+}
+
+# t1d_2_tps_names = {
+#     'exit_p': 'pressure',
+#     'exit_d': 'density',
+#     'exit_v': 'velocity',
+#     'exit_T': 'temperature',
+#     'exit_X': 'Yn_'
+# }
+
+
 
 ### Number of integration points along axisymmetric line
 # NOTE: not the actual number of points along the exterior slice,
@@ -94,8 +183,6 @@ else:
 # NOTE need to implement heat dep
 # out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'heat_dep']
 # out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'exit_E']
-# out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'exit_E', 'exit_mdot', 'inlet_mdot']
-out_qoi = ['exit_mdot', 'inlet_mdot']
 # out_qoi = ['exit_E']
 
 ### Command Line Override
@@ -114,15 +201,7 @@ plt.rcParams.update({
     "font.size": 15,
 })
 
-# soldata.array_names:
-# ['CpMix', 'Qt', 'Rmix', 'Sjoule', 'Yn_Ar', 
-# 'Yn_Ar.+1', 'Yn_Ar_h', 'Yn_Ar_m', 'Yn_Ar_p', 'Yn_Ar_r', 'Yn_E', 
-# 'density', 'distance', 'emission', 'epsilon_rad', 'kappa', 'mu', 'muT', 
-# 'pressure', 'resolution', 'sigma', 'sponge', 'swirl', 
-# 'temperature', 'velocity', 'wall_dist', 'weff', 'attribute']
-# qoi_tps = ['temperature', 'pressure', 'velocity', 'density', 'Yn_Ar.+1',
-#             'Yn_Ar_m', 'Yn_Ar_r', 'Yn_Ar_p', 'Yn_Ar_h', 'Yn_E']
-# get Yn_E to get electron density
+
 
 ##########################################################################################################
 # Script Starts Here
@@ -136,7 +215,8 @@ if not single_case:
     for out_dir in sample_out_dirs:
         clist_c = listdir_nopickle(out_dir)
         for item in clist_c:
-            clist.append(out_dir + item)
+            if not item.endswith(failed_cases):
+                clist.append(out_dir + item)
         
     clist.sort()
 else:
@@ -145,49 +225,7 @@ else:
 
 
 # N = len(clist)
-N = 48
 
-
-cases = np.array_split(np.arange(N), size)
-
-xdiff = 0.0145
-# radius at exit
-# exit_r = 0.01485
-# exit_r = 0.025
-exit_r = 0.0151
-# exit_l = 0.355
-# consider core to be at 0.14 on t1d, so 0.14 - 
-# exit_l = 0.3405
-# exit_l = 0.14 - xdiff
-exit_l = 0.340
-inlet_r = 0.0281
-exit_coords = np.array([[0, exit_l, 0],
-                [exit_r, exit_l, 0]   ])
-# inlet_coords = np.array([[0, 1e-10, 0],
-#                 [inlet_r, 1e-10, 0]   ])
-inlet_coords = np.array([[0, 0.01+1e-2, 0],
-                [inlet_r, 0.01+1e-2, 0]   ])
-
-
-qoi_sizes = {
-    'exit_p': 1, 
-    'exit_d': 2, 
-    'exit_v': 1,
-    'exit_T': 2,
-    'exit_X': 5,
-    'exit_E': 1,
-    'exit_mdot': 1,
-    'inlet_mdot': 1,
-    'heat_dep': 1
-}
-
-t1d_2_tps_names = {
-    'exit_p': 'pressure',
-    'exit_d': 'density',
-    'exit_v': 'velocity',
-    'exit_T': 'temperature',
-    'exit_X': 'Yn_'
-}
 
 # get template adjustment from first case
 c_inf = clist[0] + infile_name
@@ -198,8 +236,8 @@ with open(c_inf, 'r') as f:
 
 
 out_prefix = str(args['io']['outdirBase'])
-if qoi_sizes['exit_X'] != int(args['plasma_models']['species_number']) - 2:
-    qoi_sizes['exit_X'] = int(args['plasma_models']['species_number']) - 2
+if qoi_sizes['exit_X'][0] != int(args['plasma_models']['species_number']) - 2:
+    qoi_sizes['exit_X'][0] = int(args['plasma_models']['species_number']) - 2
 
 qoi_val_r = {}
 qoi_val = {}
@@ -208,10 +246,10 @@ mpi_offsets = {}
 
 
 for qoi in out_qoi:
-    mpi_sizes[qoi] = [cases[x].shape[0]*qoi_sizes[qoi] for x in range(size)]
+    mpi_sizes[qoi] = [cases[x].shape[0]*int(np.prod(qoi_sizes[qoi])) for x in range(size)]
     # mpi_offsets[qoi] = [0] + [cases[x].shape[0]*qoi_sizes[qoi] for x in range(size-1)]
     mpi_offsets[qoi] = [0] + np.cumsum(mpi_sizes[qoi][:-1]).tolist()
-    qoi_val_r[qoi] = np.zeros([len(cases[rank]), qoi_sizes[qoi]])
+    qoi_val_r[qoi] = np.zeros([len(cases[rank])] + list(qoi_sizes[qoi]))
 
 
 if rank == 0:
@@ -225,7 +263,7 @@ if 1:
     c = 0
     for c_ind in cases[rank]:
     # for c_ind in cases[rank][:-2]:
-    # for c_ind in [1]:
+    # for c_ind in [3]:
 
         c_dir = clist[c_ind]
         c_inf = c_dir + infile_name
@@ -251,14 +289,10 @@ if 1:
         tf = sol.time_values[-1]
         print(f"Final time: {tf}")
 
-        X_ion_t = []
-        # for x, t in enumerate(sol.time_values):
-        # breakpoint()
-        # for x, t in enumerate(sol.time_values[-1:]):
         qdat = {}
         for qoi in out_qoi:
             qdat[qoi] = {}
-            for k in range(qoi_sizes[qoi]):
+            for k in range(qoi_sizes[qoi][0]):
                 qdat[qoi][k] = []
 
         for x, t in enumerate(sol.time_values[-tf2:]):
@@ -267,146 +301,191 @@ if 1:
 
             # exit_line = pv.Spline(exit_coords, n_integ)
             exit_line = pv.Line(exit_coords[0], exit_coords[1], n_integ)
-            inlet_line = pv.Line(inlet_coords[0], inlet_coords[1], n_integ)
+            # inlet_line = pv.Line(inlet_coords[0], inlet_coords[1], n_integ)
             sold = solg.slice_along_line(exit_line)
-            soldata = sold['Block-00']
-            inld = solg.slice_along_line(inlet_line)
-            inldata = inld['Block-00']
-            inlsortinds = np.argsort(inldata.points[:,0], axis=0)
-            inldata.points = inldata.points[inlsortinds,:]
-            # breakpoint()
-            inldata['velocity'] = inldata['velocity'][inlsortinds,:]
-            inldata['density']  = inldata['density'][inlsortinds]
+            # inld = solg.slice_along_line(inlet_line)
+            # inldata = inld['Block-00']
+            # inlsortinds = np.argsort(inldata.points[:,0], axis=0)
+            # inldata.points = inldata.points[inlsortinds,:]
+            # # breakpoint()
+            # inldata['velocity'] = inldata['velocity'][inlsortinds,:]
+            # inldata['density']  = inldata['density'][inlsortinds]
 
             qoi_data_r = {}
+
+            mask = []
+            # maskinl = []
             for qoi in out_qoi:
-                if qoi == "exit_T": # same temp for both Ar and E
-                    qoi_data_r[qoi] = [soldata['temperature'], soldata['temperature']]
-                if qoi == "exit_p":
-                    qoi_data_r[qoi] = [soldata['pressure']]
-                if qoi == "exit_v": # axial velocity only
-                    qoi_data_r[qoi] = [soldata['velocity'][:,1]]
-                if qoi == "exit_d": # axial velocity only
-                    qoi_data_r[qoi] = [soldata['density']*soldata['Yn_Ar'], soldata['density']*soldata['Yn_E']*1e5]
-                if qoi == "exit_X":
-                    qoi_data_r[qoi] = []
-                    qoi_data_r[qoi].append(soldata['Yn_Ar.+1'])
-                    if qoi_sizes["exit_X"] == 5:
-                        qoi_data_r[qoi].append(soldata['Yn_Ar_m'])
-                        qoi_data_r[qoi].append(soldata['Yn_Ar_r'])
-                        qoi_data_r[qoi].append(soldata['Yn_Ar_p'])
-                        qoi_data_r[qoi].append(soldata['Yn_Ar_h'])
-                    elif qoi_sizes["exit_X"] == 2:
-                        qoi_data_r[qoi].append(soldata['Yn_Ar_s'])
+                print(f"    c_name {qoi}")
+                qoi_data_r[qoi] = []
+
+                for st in range(qoi_sizes[qoi][1]):
+
+                    if qoi.startswith("exit_") or qoi.startswith("inlet_"):
+                        soldata = sold['Block-00']
+
+                        rad = exit_r
                     else:
-                        print("Invalid number of species")
-                        quit()
-                if qoi == "exit_E":
-                    CP = float(args['species/species1']['perfect_mixture/constant_molar_cp'])
-                    qoi_data_r[qoi] = [soldata['temperature']*spc.R*CP/0.039948] # /argon molar density
-                if qoi == "exit_mdot":
-                    qoi_data_r[qoi] = [len(soldata['temperature'])*[1.0]]
-                if qoi == "inlet_mdot":
-                    qoi_data_r[qoi] = [len(inldata['temperature'])*[1.0]]
-            # get mask for the points actually within the extent of the outlet
-            mask = [0] + [x for x in range(1, soldata.points.shape[0]) if soldata.points[x-1,0] < exit_r]
-            maskinl = [0] + [x for x in range(1, inldata.points.shape[0]) if inldata.points[x-1,0] < inlet_r]
+                        ax_loc = axi_range[0] + (st/(N_axi - 1))*(axi_range[1]-axi_range[0])
+                        cur_coords = np.array([[0, ax_loc, 0],
+                                                [rad_get(ax_loc), ax_loc, 0]   ])
+                        cur_line = pv.Line(cur_coords[0], cur_coords[1], n_integ)
+                        soll = solg.slice_along_line(cur_line)
 
-            # precompute denominator
-            # int_denom = np.pi*exit_r*exit_r
+                        soldata = soll['Block-00']
+                        order = np.argsort(soldata.points[:,0])
 
-            # mass-weighted average
-            int_denom = 0
-            for i in range(len(mask) - 1):
-                work = (soldata['velocity'][i,1]*soldata['density'][i] + 
-                        soldata['velocity'][i+1,1]*soldata['density'][i+1])/2.
-                work *= (soldata.points[i,0] + soldata.points[i+1,0])/2.
-                work *= (soldata.points[i+1,0] - soldata.points[i,0])
-                int_denom += work
-            int_denom *= 2*np.pi
+                        rad = rad_get(ax_loc)
 
-            # now mass weight integrate all qoi
-            for qoi in out_qoi:
-                if "exit_mdot" in qoi:
-                    for k in range(len(qoi_data_r[qoi])):
+                    if qoi == "axial_ne_LOS": # compute electron density accounting for LOS effects from measurement
+                        _, neMax = getLOSeffect(soldata['Yn_E'][order], 
+                                                    soldata['temperature'][order], 
+                                                    soldata['density'][order], 
+                                                    soldata.points[order,0])
+                        breakpoint()
+                    if qoi == "exit_T" or qoi == "axial_T": # same temp for both Ar and E
+                        qoi_data_r[qoi].append([soldata['temperature'], soldata['temperature']])
+                    if qoi == "exit_p" or qoi == "axial_p":
+                        qoi_data_r[qoi].append([soldata['pressure']])
+                    if qoi == "exit_v" or qoi == "axial_v": # axial velocity only
+                        qoi_data_r[qoi].append([soldata['velocity'][:,1]])
+                    if qoi == "exit_d" or qoi == "axial_d": # axial velocity only
+                        qoi_data_r[qoi].append([soldata['density']*soldata['Yn_Ar'], soldata['density']*soldata['Yn_E']*1e5])
+                    if qoi == "exit_X" or qoi == "axial_X":
+                        qoi_data_r[qoi].append([])
+                        qoi_data_r[qoi][-1].append(soldata['Yn_Ar.+1'])
+                        if qoi_sizes["exit_X"][0] == 5:
+                            qoi_data_r[qoi][-1].append(soldata['Yn_Ar_m'])
+                            qoi_data_r[qoi][-1].append(soldata['Yn_Ar_r'])
+                            qoi_data_r[qoi][-1].append(soldata['Yn_Ar_p'])
+                            qoi_data_r[qoi][-1].append(soldata['Yn_Ar_h'])
+                        elif qoi_sizes["exit_X"][0] == 2:
+                            qoi_data_r[qoi][-1].append(soldata['Yn_Ar_s'])
+                        else:
+                            print("Invalid number of species")
+                            quit()
+                    if qoi == "exit_E" or qoi == "axial_E":
+                        CP = float(args['species/species1']['perfect_mixture/constant_molar_cp'])
+                        qoi_data_r[qoi].append([soldata['temperature']*spc.R*CP/0.039948]) # /argon molar density
+                    if qoi == "exit_mdot":
+                        qoi_data_r[qoi].append([len(soldata['temperature'])*[1.0]])
+                    if qoi == "inlet_mdot":
+                        qoi_data_r[qoi].append([len(inldata['temperature'])*[1.0]])
+
+                    # get mask for the points actually within the extent
+                    # mask.append([0] + [x for x in range(1, soldata.points.shape[0]) if soldata.points[x-1,0] < rad])
+                    mask.append([0] + [x for x in range(1, soldata.points.shape[0]) if soldata.points[order[x-1],0] < rad])
+                    # maskinl = [0] + [x for x in range(1, inldata.points.shape[0]) if inldata.points[x-1,0] < inlet_r]
+
+                    # precompute denominator
+                    # int_denom = np.pi*exit_r*exit_r
+
+                    # mass-weighted average
+                    int_denom = 0
+                    for i in range(len(mask[st]) - 1):
+                        work = (soldata['velocity'][order[i],1]*soldata['density'][order[i]] + 
+                                soldata['velocity'][order[i+1],1]*soldata['density'][order[i+1]])/2.
+                        work = 1.
+                        work *= (soldata.points[order[i],0] + soldata.points[order[i+1],0])/2.
+                        work *= (soldata.points[order[i+1],0] - soldata.points[order[i],0])
+                        int_denom += work
+                    int_denom *= 2*np.pi
+
+                    # else:
+                    # for k in range(len(qoi_data_r[qoi])):
+                    # area average
+                    # isum = 0
+                    # for i in range(len(mask) - 1):
+                    #     # 2 pi r h(r) dr rings by trapezoid
+                    #     work = (qoi_data_r[qoi][k][i] + qoi_data_r[qoi][k][i+1])/2.
+                    #     work *= (soldata.points[i,0] + soldata.points[i+1,0])/2.
+                    #     # work = (qoi_data_r[qoi][k][i]*soldata.points[i,0] + qoi_data_r[qoi][k][i+1]*soldata.points[i+1,0])/2.
+                    #     work *= (soldata.points[i+1,0] - soldata.points[i,0])
+                    #     isum += work
+
+                    # # res = np.trapz(qoi_data_r[qoi][k][mask], x=soldata.points[mask,0])
+                    # work2 = (isum*2*np.pi)/int_denom
+                    # qoi_val_r[qoi][c,k] = work2
+
+                    # mass-flux average
+
+                    ### UP TO HERE ###
+                    ### REINDEX QDAT, ETC
+
+                    for k in range(qoi_sizes[qoi][0]):
+                        qdat[qoi][k].append([])
                         isum = 0
-                        for i in range(len(mask) - 1):
-                            work = (qoi_data_r[qoi][k][i]*soldata.points[i,0]*soldata['velocity'][i,1]*soldata['density'][i] + 
-                                    qoi_data_r[qoi][k][i+1]*soldata.points[i+1,0]*soldata['velocity'][i+1,1]*soldata['density'][i+1])/2.
-                            work *= (soldata.points[i+1,0] - soldata.points[i,0])
-                            isum += work
-                        work2 = isum*2*np.pi
-                        qdat[qoi][k].append(work2)
-                elif "inlet_mdot" in qoi:
-                    for k in range(len(qoi_data_r[qoi])):
-                        isum = 0
-                        for i in range(len(maskinl) - 1):
-                            work = (qoi_data_r[qoi][k][i]*inldata.points[i,0]*inldata['velocity'][i,1]*inldata['density'][i] + 
-                                    qoi_data_r[qoi][k][i+1]*inldata.points[i+1,0]*inldata['velocity'][i+1,1]*inldata['density'][i+1])/2.
-                            work *= (inldata.points[i+1,0] - inldata.points[i,0])
-                            isum += work
-                        work2 = isum*2*np.pi
-                        qdat[qoi][k].append(work2)
-                else:
-                    for k in range(len(qoi_data_r[qoi])):
-                        # area average
-                        # isum = 0
-                        # for i in range(len(mask) - 1):
-                        #     # 2 pi r h(r) dr rings by trapezoid
-                        #     work = (qoi_data_r[qoi][k][i] + qoi_data_r[qoi][k][i+1])/2.
-                        #     work *= (soldata.points[i,0] + soldata.points[i+1,0])/2.
-                        #     # work = (qoi_data_r[qoi][k][i]*soldata.points[i,0] + qoi_data_r[qoi][k][i+1]*soldata.points[i+1,0])/2.
-                        #     work *= (soldata.points[i+1,0] - soldata.points[i,0])
-                        #     isum += work
-
-                        # # res = np.trapz(qoi_data_r[qoi][k][mask], x=soldata.points[mask,0])
-                        # work2 = (isum*2*np.pi)/int_denom
-                        # qoi_val_r[qoi][c,k] = work2
-
-                        # mass-flux average??
-                        isum = 0
-                        for i in range(len(mask) - 1):
+                        for i in range(len(mask[st]) - 1):
                             # 2 pi r h(r) dr rings by trapezoid
                             # work = (qoi_data_r[qoi][k][i]*soldata['velocity'][i,1]*soldata['density'][i] + 
                             #         qoi_data_r[qoi][k][i+1]*soldata['velocity'][i+1,1]*soldata['density'][i+1])/2.
-                            # work *= (soldata.points[i,0] + soldata.points[i+1,0])/2.
-                            work = (qoi_data_r[qoi][k][i]*soldata.points[i,0]*soldata['velocity'][i,1]*soldata['density'][i] + 
-                                    qoi_data_r[qoi][k][i+1]*soldata.points[i+1,0]*soldata['velocity'][i+1,1]*soldata['density'][i+1])/2.
-                            work *= (soldata.points[i+1,0] - soldata.points[i,0])
+                            # # work *= (soldata.points[i,0] + soldata.points[i+1,0])/2.
+                            # work = (qoi_data_r[qoi][st][k][i]*soldata.points[i,0]*soldata['velocity'][i,1]*soldata['density'][i] + 
+                            #         qoi_data_r[qoi][st][k][i+1]*soldata.points[i+1,0]*soldata['velocity'][i+1,1]*soldata['density'][i+1])/2.
+                            # work *= (soldata.points[i+1,0] - soldata.points[i,0])
+
+                            # work = (qoi_data_r[qoi][st][k][order[i]]*soldata.points[order[i],0] + #*soldata['velocity'][order[i],1]*soldata['density'][order[i]] + 
+                            #         qoi_data_r[qoi][st][k][order[i+1]]*soldata.points[order[i+1],0])/2. #*soldata['velocity'][order[i+1],1]*soldata['density'][order[i+1]])/2.
+                            work = (qoi_data_r[qoi][st][k][order[i]]*soldata.points[order[i],0]*soldata['velocity'][order[i],1]*soldata['density'][order[i]] + 
+                                    qoi_data_r[qoi][st][k][order[i+1]]*soldata.points[order[i+1],0]*soldata['velocity'][order[i+1],1]*soldata['density'][order[i+1]])/2.
+                            work *= (soldata.points[order[i+1],0] - soldata.points[order[i],0])
                             isum += work
 
-                        # res = np.trapz(qoi_data_r[qoi][k][mask], x=soldata.points[mask,0])
-                        int_numer = isum*2*np.pi
+                            # res = np.trapz(qoi_data_r[qoi][k][mask], x=soldata.points[mask,0])
+                            int_numer = isum*2*np.pi
                         work2 = int_numer/int_denom
-                        qdat[qoi][k].append(work2)
+                        qdat[qoi][k][st].append(work2)
 
-        for qoi in out_qoi:
-            for k in range(qoi_sizes[qoi]):
-                qoi_val_r[qoi][c,k] = np.mean(qdat[qoi][k])
-                # breakpoint()
+                # for qoi in out_qoi:
+                        qoi_val_r[qoi][c,k,st] = np.mean(qdat[qoi][k][st])
 
-        print("inlet mdot:")
-        print(qoi_val_r['inlet_mdot'][0])
-        print("exit mdot:")
-        print(qoi_val_r['exit_mdot'][0])
-        breakpoint()
         c += 1
+                    # now mass weight integrate all qoi
+                    # for qoi in out_qoi:
+                    #     if "exit_mdot" in qoi:
+                    #         for k in range(len(qoi_data_r[qoi])):
+                    #             isum = 0
+                    #             for i in range(len(mask) - 1):
+                    #                 work = (qoi_data_r[qoi][k][i]*soldata.points[i,0]*soldata['velocity'][i,1]*soldata['density'][i] + 
+                    #                         qoi_data_r[qoi][k][i+1]*soldata.points[i+1,0]*soldata['velocity'][i+1,1]*soldata['density'][i+1])/2.
+                    #                 work *= (soldata.points[i+1,0] - soldata.points[i,0])
+                    #                 isum += work
+                    #             work2 = isum*2*np.pi
+                    #             qdat[qoi][k].append(work2)
+                    #     # elif "inlet_mdot" in qoi:
+                    #     #     for k in range(len(qoi_data_r[qoi])):
+                    #     #         isum = 0
+                    #     #         for i in range(len(maskinl) - 1):
+                    #     #             work = (qoi_data_r[qoi][k][i]*inldata.points[i,0]*inldata['velocity'][i,1]*inldata['density'][i] + 
+                    #     #                     qoi_data_r[qoi][k][i+1]*inldata.points[i+1,0]*inldata['velocity'][i+1,1]*inldata['density'][i+1])/2.
+                    #     #             work *= (inldata.points[i+1,0] - inldata.points[i,0])
+                    #     #             isum += work
+                    #     #         work2 = isum*2*np.pi
+                    #     #         qdat[qoi][k].append(work2)
+
+                        # breakpoint()
+
+        # print("inlet mdot:")
+        # print(qoi_val_r['inlet_mdot'][0])
+        # print("exit mdot:")
+        # print(qoi_val_r['exit_mdot'][0])
+        # breakpoint()
 
         # plot exit_T over time
-        if make_plots:
-            T_t = []
-            for x in range(time_sum):
-                T_t.append(qdat['exit_T'][0][x])
+        # if make_plots:
+        #     T_t = []
+        #     for x in range(time_sum):
+        #         T_t.append(qdat['exit_T'][0][x])
 
-            plt.plot(sol.time_values[-time_sum:], T_t)
-            plt.savefig("T_over_time_tps2d_5.png")
-            plt.clf()
-            breakpoint()
+        #     plt.plot(sol.time_values[-time_sum:], T_t)
+        #     plt.savefig("T_over_time_tps2d_5.png")
+        #     plt.clf()
+        #     breakpoint()
 
     
 
     for qoi in out_qoi:
-        qoi_val[qoi] = np.zeros([N, qoi_sizes[qoi]])
+        qoi_val[qoi] = np.zeros([N, qoi_sizes[qoi][0], qoi_sizes[qoi][1]])
         # breakpoint()
         comm.Gatherv(qoi_val_r[qoi], [qoi_val[qoi], mpi_sizes[qoi], mpi_offsets[qoi], MPI.DOUBLE],  root=0)
         # comm.Gatherv(qoi_val_r[group][qoi], [qoi_val[group][qoi], mpi_sizes[group], mpi_offsets],  root=0)
@@ -426,4 +505,4 @@ if 1:
 
             pickle.dump(out_qoi, f)
 
-    breakpoint()
+    # breakpoint()

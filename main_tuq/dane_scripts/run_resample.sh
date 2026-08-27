@@ -3,7 +3,8 @@
 #SBATCH -N 1
 #SBATCH -n 112
 #SBATCH -t 1:00:00
-#SBATCH -p pdebug
+##SBATCH -p pdebug
+#SBATCH -p pbatch
 #SBATCH --mail-type=ALL
 #SBATCH -o output.%j              #Output file name
 ###SBATCH -A bedonian1
@@ -23,4 +24,5 @@ sinfo -s
 
 echo '=====================JOB STARTING=========================='
 
+cd ~/torch-sensitivity/main_tuq
 srun  python3.11 resample_rates.py
