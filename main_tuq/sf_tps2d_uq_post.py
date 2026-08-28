@@ -128,6 +128,7 @@ def rad_get(x):
 
 
 axi_range = [step_l - 0.078, step_l + 0.118]
+# axi_range = [step_l - 0.001, step_l + 0.001]
 exit_coords = np.array([[0, exit_l, 0],
                 [exit_r, exit_l, 0]   ])
 # inlet_coords = np.array([[0, 1e-10, 0],
@@ -151,7 +152,7 @@ qoi_sizes = {
     'axial_T': [2, N_axi],
     'axial_X': [5, N_axi],
     'axial_E': [1, N_axi],
-    'axial_ne_LOS': [1, N_axi]
+    'axial_ne_LOS': [2, N_axi]
 }
 
 # t1d_2_tps_names = {
@@ -338,11 +339,12 @@ if 1:
                         rad = rad_get(ax_loc)
 
                     if qoi == "axial_ne_LOS": # compute electron density accounting for LOS effects from measurement
-                        _, neMax = getLOSeffect(soldata['Yn_E'][order], 
+                        losLine, neMax = getLOSeffect(soldata['Yn_E'][order], 
                                                     soldata['temperature'][order], 
                                                     soldata['density'][order], 
                                                     soldata.points[order,0])
-                        breakpoint()
+                        qoi_data_r[qoi].append([losLine, neMax])      
+
                     if qoi == "exit_T" or qoi == "axial_T": # same temp for both Ar and E
                         qoi_data_r[qoi].append([soldata['temperature'], soldata['temperature']])
                     if qoi == "exit_p" or qoi == "axial_p":
@@ -372,72 +374,79 @@ if 1:
                     if qoi == "inlet_mdot":
                         qoi_data_r[qoi].append([len(inldata['temperature'])*[1.0]])
 
-                    # get mask for the points actually within the extent
-                    # mask.append([0] + [x for x in range(1, soldata.points.shape[0]) if soldata.points[x-1,0] < rad])
-                    mask.append([0] + [x for x in range(1, soldata.points.shape[0]) if soldata.points[order[x-1],0] < rad])
-                    # maskinl = [0] + [x for x in range(1, inldata.points.shape[0]) if inldata.points[x-1,0] < inlet_r]
 
-                    # precompute denominator
-                    # int_denom = np.pi*exit_r*exit_r
 
-                    # mass-weighted average
-                    int_denom = 0
-                    for i in range(len(mask[st]) - 1):
-                        work = (soldata['velocity'][order[i],1]*soldata['density'][order[i]] + 
-                                soldata['velocity'][order[i+1],1]*soldata['density'][order[i+1]])/2.
-                        work = 1.
-                        work *= (soldata.points[order[i],0] + soldata.points[order[i+1],0])/2.
-                        work *= (soldata.points[order[i+1],0] - soldata.points[order[i],0])
-                        int_denom += work
-                    int_denom *= 2*np.pi
 
-                    # else:
-                    # for k in range(len(qoi_data_r[qoi])):
-                    # area average
-                    # isum = 0
-                    # for i in range(len(mask) - 1):
-                    #     # 2 pi r h(r) dr rings by trapezoid
-                    #     work = (qoi_data_r[qoi][k][i] + qoi_data_r[qoi][k][i+1])/2.
-                    #     work *= (soldata.points[i,0] + soldata.points[i+1,0])/2.
-                    #     # work = (qoi_data_r[qoi][k][i]*soldata.points[i,0] + qoi_data_r[qoi][k][i+1]*soldata.points[i+1,0])/2.
-                    #     work *= (soldata.points[i+1,0] - soldata.points[i,0])
-                    #     isum += work
+                    if qoi in preprocessed_qoi:
+                        for k in range(qoi_sizes[qoi][0]):
+                            qoi_val_r[qoi][c,k,st] = qoi_data_r[qoi][st][k]
+                    else:
+                        # get mask for the points actually within the extent
+                        # mask.append([0] + [x for x in range(1, soldata.points.shape[0]) if soldata.points[x-1,0] < rad])
+                        mask.append([0] + [x for x in range(1, soldata.points.shape[0]) if soldata.points[order[x-1],0] < rad])
+                        # maskinl = [0] + [x for x in range(1, inldata.points.shape[0]) if inldata.points[x-1,0] < inlet_r]
 
-                    # # res = np.trapz(qoi_data_r[qoi][k][mask], x=soldata.points[mask,0])
-                    # work2 = (isum*2*np.pi)/int_denom
-                    # qoi_val_r[qoi][c,k] = work2
+                        # precompute denominator
+                        # int_denom = np.pi*exit_r*exit_r
 
-                    # mass-flux average
-
-                    ### UP TO HERE ###
-                    ### REINDEX QDAT, ETC
-
-                    for k in range(qoi_sizes[qoi][0]):
-                        qdat[qoi][k].append([])
-                        isum = 0
+                        # mass-weighted average
+                        int_denom = 0
                         for i in range(len(mask[st]) - 1):
-                            # 2 pi r h(r) dr rings by trapezoid
-                            # work = (qoi_data_r[qoi][k][i]*soldata['velocity'][i,1]*soldata['density'][i] + 
-                            #         qoi_data_r[qoi][k][i+1]*soldata['velocity'][i+1,1]*soldata['density'][i+1])/2.
-                            # # work *= (soldata.points[i,0] + soldata.points[i+1,0])/2.
-                            # work = (qoi_data_r[qoi][st][k][i]*soldata.points[i,0]*soldata['velocity'][i,1]*soldata['density'][i] + 
-                            #         qoi_data_r[qoi][st][k][i+1]*soldata.points[i+1,0]*soldata['velocity'][i+1,1]*soldata['density'][i+1])/2.
-                            # work *= (soldata.points[i+1,0] - soldata.points[i,0])
-
-                            # work = (qoi_data_r[qoi][st][k][order[i]]*soldata.points[order[i],0] + #*soldata['velocity'][order[i],1]*soldata['density'][order[i]] + 
-                            #         qoi_data_r[qoi][st][k][order[i+1]]*soldata.points[order[i+1],0])/2. #*soldata['velocity'][order[i+1],1]*soldata['density'][order[i+1]])/2.
-                            work = (qoi_data_r[qoi][st][k][order[i]]*soldata.points[order[i],0]*soldata['velocity'][order[i],1]*soldata['density'][order[i]] + 
-                                    qoi_data_r[qoi][st][k][order[i+1]]*soldata.points[order[i+1],0]*soldata['velocity'][order[i+1],1]*soldata['density'][order[i+1]])/2.
+                            work = (soldata['velocity'][order[i],1]*soldata['density'][order[i]] + 
+                                    soldata['velocity'][order[i+1],1]*soldata['density'][order[i+1]])/2.
+                            work = 1.
+                            work *= (soldata.points[order[i],0] + soldata.points[order[i+1],0])/2.
                             work *= (soldata.points[order[i+1],0] - soldata.points[order[i],0])
-                            isum += work
+                            int_denom += work
+                        int_denom *= 2*np.pi
 
-                            # res = np.trapz(qoi_data_r[qoi][k][mask], x=soldata.points[mask,0])
-                            int_numer = isum*2*np.pi
-                        work2 = int_numer/int_denom
-                        qdat[qoi][k][st].append(work2)
+                        # else:
+                        # for k in range(len(qoi_data_r[qoi])):
+                        # area average
+                        # isum = 0
+                        # for i in range(len(mask) - 1):
+                        #     # 2 pi r h(r) dr rings by trapezoid
+                        #     work = (qoi_data_r[qoi][k][i] + qoi_data_r[qoi][k][i+1])/2.
+                        #     work *= (soldata.points[i,0] + soldata.points[i+1,0])/2.
+                        #     # work = (qoi_data_r[qoi][k][i]*soldata.points[i,0] + qoi_data_r[qoi][k][i+1]*soldata.points[i+1,0])/2.
+                        #     work *= (soldata.points[i+1,0] - soldata.points[i,0])
+                        #     isum += work
 
-                # for qoi in out_qoi:
-                        qoi_val_r[qoi][c,k,st] = np.mean(qdat[qoi][k][st])
+                        # # res = np.trapz(qoi_data_r[qoi][k][mask], x=soldata.points[mask,0])
+                        # work2 = (isum*2*np.pi)/int_denom
+                        # qoi_val_r[qoi][c,k] = work2
+
+                        # mass-flux average
+
+                        ### UP TO HERE ###
+                        ### REINDEX QDAT, ETC
+
+                        for k in range(qoi_sizes[qoi][0]):
+                            qdat[qoi][k].append([])
+                            isum = 0
+                            for i in range(len(mask[st]) - 1):
+                                # 2 pi r h(r) dr rings by trapezoid
+                                # work = (qoi_data_r[qoi][k][i]*soldata['velocity'][i,1]*soldata['density'][i] + 
+                                #         qoi_data_r[qoi][k][i+1]*soldata['velocity'][i+1,1]*soldata['density'][i+1])/2.
+                                # # work *= (soldata.points[i,0] + soldata.points[i+1,0])/2.
+                                # work = (qoi_data_r[qoi][st][k][i]*soldata.points[i,0]*soldata['velocity'][i,1]*soldata['density'][i] + 
+                                #         qoi_data_r[qoi][st][k][i+1]*soldata.points[i+1,0]*soldata['velocity'][i+1,1]*soldata['density'][i+1])/2.
+                                # work *= (soldata.points[i+1,0] - soldata.points[i,0])
+
+                                # work = (qoi_data_r[qoi][st][k][order[i]]*soldata.points[order[i],0] + #*soldata['velocity'][order[i],1]*soldata['density'][order[i]] + 
+                                #         qoi_data_r[qoi][st][k][order[i+1]]*soldata.points[order[i+1],0])/2. #*soldata['velocity'][order[i+1],1]*soldata['density'][order[i+1]])/2.
+                                work = (qoi_data_r[qoi][st][k][order[i]]*soldata.points[order[i],0]*soldata['velocity'][order[i],1]*soldata['density'][order[i]] + 
+                                        qoi_data_r[qoi][st][k][order[i+1]]*soldata.points[order[i+1],0]*soldata['velocity'][order[i+1],1]*soldata['density'][order[i+1]])/2.
+                                work *= (soldata.points[order[i+1],0] - soldata.points[order[i],0])
+                                isum += work
+
+                                # res = np.trapz(qoi_data_r[qoi][k][mask], x=soldata.points[mask,0])
+                                int_numer = isum*2*np.pi
+                            work2 = int_numer/int_denom
+                            qdat[qoi][k][st].append(work2)
+
+                            # for qoi in out_qoi:
+                            qoi_val_r[qoi][c,k,st] = np.mean(qdat[qoi][k][st])
 
         c += 1
                     # now mass weight integrate all qoi

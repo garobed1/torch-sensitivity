@@ -2,7 +2,7 @@
 import numpy as np
 from scipy.io import loadmat
 from scipy.special import erf, wofz
-from scipy.interpolate import interpn
+from scipy.interpolate import interpn, RegularGridInterpolator    
 import os
 
 # emulation of line-of-sight (LOS) effects on electron density measurements, applied to TPS results for direct comparison
@@ -46,7 +46,12 @@ if lineCase == "beta":
     A_ji = 8.4193e+06/(4*np.pi)
 
 wvlNew = np.linspace(-5,0,8000)
+# wvlNew = np.linspace(-2,0,3000)
 wvlNew = np.concatenate([wvlNew, -np.flip(wvlNew)[1:]])
+
+data_interp = RegularGridInterpolator(points = (alphaVec[0],logNeVec[0],muVec[0],rhoVec[0]),
+                                values = starkLib, 
+                                method='cubic',bounds_error = False, fill_value=0)
 
 # breakpoint()
 """
@@ -95,19 +100,22 @@ def getLOSeffect(Ye_data, T_data, rho_data, pos_data):
 
     dr = [pos_data[n+1] - pos_data[n] for n in range(len(pos_data)-1)]
     dr.append(pos_data[-1] - pos_data[-2])
-    losLine = 2*np.sum(lineShape, axis = 1)*dr
+    # losLine = 2*np.sum(lineShape*dr, axis = 0)
+    losLine = 2*np.einsum('ij,i->j', lineShape, dr)
     losLine = losLine/max(losLine)
     losLine[np.isnan(losLine)] = 0
     
     neMaxIdx = np.argmax(n_e)
-    neMaxProfile = lineShape[:,neMaxIdx]/max(lineShape[:,neMaxIdx])
+    neMaxProfile = lineShape[neMaxIdx,:]/max(lineShape[neMaxIdx,:])
+    # neMaxProfile = lineShape[neMaxIdx,:]
     neMaxProfile[np.isnan(neMaxProfile)] = 0
 
     residual = neMaxProfile-losLine
     
+    breakpoint()
     # Build output array
     Aout = [losLine, neMaxProfile]
-    breakpoint()
+
     return Aout
 
 ## helper functions
@@ -172,10 +180,11 @@ def convLineShapeBeta(wl,dw_inst,dw_doppler,mu,Te,ne):
                             np.log10(ne)*np.ones(alphaFit.shape[0]),
                             mu*np.ones(alphaFit.shape[0]),
                             rho*np.ones(alphaFit.shape[0])]),
-        starkProfile = interpn(points = (alphaVec[0],logNeVec[0],muVec[0],rhoVec[0]),
-                                values = starkLib, 
-                                xi = xigrid[0].T,
-                                method='cubic',bounds_error = False, fill_value=0)
+        # starkProfile = interpn(points = (alphaVec[0],logNeVec[0],muVec[0],rhoVec[0]),
+        #                         values = starkLib, 
+        #                         xi = xigrid[0].T,
+        #                         method='cubic',bounds_error = False, fill_value=0)
+        starkProfile = data_interp(xigrid[0].T)
         starkProfile = np.concatenate([np.flipud(starkProfile[1:]).T, starkProfile.T])
         starkProfile = starkProfile/F0
         starkProfile = starkProfile/max(starkProfile)
