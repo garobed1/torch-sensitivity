@@ -6,8 +6,7 @@ import os, sys
 from util_tuq.sample_utils import *
 
 
-import inputs
-from axial_torch import AxialTorch
+
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -16,24 +15,34 @@ size = comm.Get_size()
 Script to perform post-processing of torch1d cases for one fidelity level
 """
 
+fstep = 70000 
+ffilename = 'AxialICPTorch-00070000.h5'
+
 def listdir_nopickle(path):
     return [f for f in os.listdir(path) if not f.endswith('.pickle')]
 def listdir_nocrash(path):
     return [f for f in os.listdir(path) if 'crashed' not in f and 'tar.gz' not in f]
+def listdir_complete(path, endstep):
+    return [f for f in os.listdir(path) if ffilename in os.listdir(path + f + '/output/')]
 
-
+eMass = 9.1093837139e-31
 
 home = os.getenv('HOME')
+
+sys.path.append(os.path.abspath(home + "/torch1d"))
+import inputs
+from axial_torch import AxialTorch
 
 ### Torch1D Sample Directories
 # sample_in_dir = home + "/bedonian1/cross_section_samples_r7/"
 # sample_out_dir = home + "/bedonian1/torch1d_samples_r7/"
 # sample_out_dir = home + "/bedonian1/torch1d_resample_r7/"
 # sample_out_dir = home + "/bedonian1/torch1d_resample_sens_r7/"
-sample_out_dir = home + "/bedonian1/torch1d_r1_pilot/"
-template_file = f"{home}/bedonian1/mean_r6/torch1d_input_r.yml" # keep this to deal with restarts
+# sample_out_dir = home + "/bedonian1/torch1d_r1_pilot/"
+sample_out_dir = home + "/bedonian1/sample_torch1d_base/"
+template_file = f"{home}/bedonian1/mean_torch1d_old/mean_r6/torch1d_input_r.yml" # keep this to deal with restarts
 infile_name = "/torch1d_input.yml"
-res_dir = home + "/bedonian1/t1d_time_testing/"
+res_dir = home + "/bedonian1/sample_torch1d_base_post/"
 
 ### Set your path to torch1d for import
 t1d_path = '/g/g14/bedonian1/torch1d/'
@@ -42,11 +51,15 @@ t1d_path = '/g/g14/bedonian1/torch1d/'
 ### Index of exit, and final time step
 qoi_ind = -1
 # use this state as the "final" time step
-fstep = 70000 
+
 # fstep = 25000
 
 ### Outputs to Process
-out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'heat_dep']
+# out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'heat_dep']
+out_qoi = ['axial_ne_LOS', 'axial_v', 'axial_X', 'axial_d', 'axial_T', 'axial_E']
+
+failed_cases = ('000384', '000349', '000393', '000449', '000197', '000129', '000029', '000030', '000409')
+
 
 ### Command Line Override
 if len(sys.argv) > 2:
@@ -80,6 +93,19 @@ plt.rcParams.update({
 # Script Starts Here
 ##########################################################################################################
 
+# get torch radius at axial location
+def rad_get(x):
+    if x >= 0.3:
+        return exit_r
+    elif x <= .123875:
+        return inlet_r
+    elif x > .123875 and x <= .13425:
+        return step_r
+    elif x > .13425 and x < .13425 + 0.014:
+        slope = (x - .13425)/0.014
+        return step_r + slope*(inlet_r - step_r)
+    else:
+        return inlet_r
 
 ### Get Torch1d Import
 sys.path.insert(0, t1d_path)
@@ -87,8 +113,14 @@ from torch1d import *
 
 # size = 3
 # clist = os.listdir(sample_out_dir)
-clist = listdir_nopickle(sample_out_dir)
+# clist = listdir_nopickle(sample_out_dir)
+clist = []
+clist_c = listdir_complete(sample_out_dir, fstep)
+for item in clist_c:
+    if not item.endswith(failed_cases):
+        clist.append(item)
 clist.sort()
+# breakpoint()
 # breakpoint()
 
 # prepare for sensitivity analysis
@@ -110,11 +142,10 @@ clists = {}
 for group in groups:
     clists[group] = []
 
-    while clist and clist[0].split('_')[1] == group:
+    while clist and clist[0].split('_')[-2] == group:
         clists[group].append(clist.pop(0))
 
     N[group] = len(clists[group])
-
         #TEST
     # N['A'] = 4
     # N['B'] = 4  
@@ -122,16 +153,33 @@ for group in groups:
     # cases = divide_cases(N, size)
     cases[group] = np.array_split(np.arange(N[group]), size)
 
-
-
+xdiff = 0.0145
+exit_r = 0.0151
+exit_l = 0.340
+inlet_r = 0.0281
+step_r = 0.2426
+step_l = 0.124 + xdiff
+N_axi = 150
+axi_range = [step_l - 0.078, step_l + 0.118]
 
 qoi_sizes = {
-    'exit_p': 1, 
-    'exit_d': 2, 
-    'exit_v': 1,
-    'exit_T': 2,
-    'exit_X': 5,
-    'heat_dep': 1
+    'exit_p': [1, 1], 
+    'exit_d': [2, 1], 
+    'exit_v': [1, 1],
+    'exit_T': [2, 1],
+    'exit_X': [5, 1],
+    'exit_E': [1, 1],
+    'exit_mdot': [1, 1],
+    'inlet_mdot': [1, 1],
+    'heat_dep': [1, 1],
+    'axial_p': [1, N_axi], 
+    'axial_d': [2, N_axi], 
+    'axial_v': [1, N_axi],
+    'axial_T': [2, N_axi],
+    'axial_X': [5, N_axi],
+    'axial_E': [1, N_axi],
+    'axial_ne_LOS': [1, N_axi]
+    # 'axial_ne_LOS': [2, N_axi]
 }
 
 # get template adjustment from first case
@@ -159,10 +207,11 @@ for group in groups:
     mpi_sizes[group] = {}
     mpi_offsets[group] = {}
     for qoi in out_qoi:
-        mpi_sizes[group][qoi] = [cases[group][x].shape[0]*qoi_sizes[qoi] for x in range(size)]
+        mpi_sizes[group][qoi] = [cases[group][x].shape[0]*np.prod(qoi_sizes[qoi]) for x in range(size)]
         # mpi_offsets[qoi] = [0] + [cases[x].shape[0]*qoi_sizes[qoi] for x in range(size-1)]
         mpi_offsets[group][qoi] = [0] + np.cumsum(mpi_sizes[group][qoi][:-1]).tolist()
-        qoi_val_r[group][qoi] = np.zeros([len(cases[group][rank]), qoi_sizes[qoi]])
+        # breakpoint()
+        qoi_val_r[group][qoi] = np.zeros([len(cases[group][rank]), qoi_sizes[qoi][0], qoi_sizes[qoi][1]])
 
 
 if rank == 0:
@@ -212,17 +261,23 @@ for group in groups:
         flist.sort()
         Nr = len(flist) - 1
         filenames = []
-        for r in range(Nr+1):
-            # filenames += ['%s/%s-%08d.h5' % (solver.outputDir, solver.prefix, nt0 + r * solver.outputFrequency)]
-            filenames += [solver.outputDir + '/' + flist[r]]
+        # for r in range(Nr+1):
+        #     # filenames += ['%s/%s-%08d.h5' % (solver.outputDir, solver.prefix, nt0 + r * solver.outputFrequency)]
+        #     filenames += [solver.outputDir + '/' + flist[r]]
             
-            if nt0 + r * solver.outputFrequency == fstep and exists(filenames[-1]): 
-                rf = r + 0
+        #     if nt0 + r * solver.outputFrequency == fstep and exists(filenames[-1]): 
+        #         rf = r + 0
+        
+        ### NOTE:
+        Nr = 0
+        filenames.append(solver.outputDir + '/' + ffilename)
+        rf = -1
+
         # breakpoint()
-        crashFile = '%s/%s.crashed.h5' % (solver.outputDir, solver.prefix)
-        if (exists(crashFile)):
-            filenames += [crashFile]
-            Nr += 1
+        # crashFile = '%s/%s.crashed.h5' % (solver.outputDir, solver.prefix)
+        # if (exists(crashFile)):
+        #     filenames += [crashFile]
+        #     Nr += 1
 
         if rf is None and skip_incomplete:
             continue
@@ -282,12 +337,15 @@ for group in groups:
             chem = MassActionLaw(solver.state, config)
         for r, filename in enumerate(filenames):
         #     filename = '%s/%s-%08d.h5' % (solver.outputDir, solver.prefix, nt0 + r * solver.outputFrequency)
-            if 1:
-            # try:
+            # if 1:
+            try:
                 solver.state.loadState(filename)
-            # except:
-            #     print(filename, file=sys.stderr)
-            #     quit()
+                broken = False
+            except:
+                print(filename, file=sys.stderr)
+                broken = True
+                break
+                # quit()
             #     solver.state.loadState(filename)
             # solver.rhs.collInt.update(solver.state)
             solver.state.collInt.update(solver.state)
@@ -324,6 +382,14 @@ for group in groups:
                 rxn[r], rxnb[r] = chem.computeRates(solver.state)
                 ndots[r] = np.matmul(chem.creationStoich.T, rxn[r] - rxnb[r])
 
+        if broken:
+            for qoi in out_qoi:
+                for st in range(qoi_sizes[qoi][1]):
+                    qoi_val_r[group][qoi][c, :, :] = np.inf
+            c += 1
+
+            continue
+
         # plot exit_X ion over time
         # X_ion_t = []
         # for x in range(len(Xsp)):
@@ -333,20 +399,42 @@ for group in groups:
         # plt.savefig("xion_over_time_t1d.png")
         # plt.clf()
         # breakpoint()
+        for qoi in out_qoi:
+            for st in range(qoi_sizes[qoi][1]):
+                if qoi == "exit_p":
+                    qoi_val_r[group]["exit_p"][c, :, 0] = hist[rf][qoi_ind,0]
+                if qoi == "exit_d":
+                    qoi_val_r[group]["exit_d"][c, :, 0] = [rho[rf][qoi_ind], hist[rf][qoi_ind,-1]*1e5]
+                if qoi == "exit_v":
+                    qoi_val_r[group]["exit_v"][c, :, 0] = vel[rf][qoi_ind,-1]
+                if qoi == "exit_T":
+                    qoi_val_r[group]["exit_T"][c, :, 0] = [Th[rf][qoi_ind], Te[rf][qoi_ind]]
+                if qoi == "exit_X":
+                    qoi_val_r[group]["exit_X"][c, :, 0] = Xsp[rf][qoi_ind,2:7]
+                if qoi == "heat_dep":
+                    qoi_val_r[group]["heat_dep"][c, :, 0] = plasmaPower[rf] * 1e-3
 
-
-        if "exit_p" in out_qoi:
-            qoi_val_r[group]["exit_p"][c, :] = hist[rf][qoi_ind,0]
-        if "exit_d" in out_qoi:
-            qoi_val_r[group]["exit_d"][c, :] = [rho[rf][qoi_ind], hist[rf][qoi_ind,-1]*1e5]
-        if "exit_v" in out_qoi:
-            qoi_val_r[group]["exit_v"][c, :] = vel[rf][qoi_ind,-1]
-        if "exit_T" in out_qoi:
-            qoi_val_r[group]["exit_T"][c, :] = [Th[rf][qoi_ind], Te[rf][qoi_ind]]
-        if "exit_X" in out_qoi:
-            qoi_val_r[group]["exit_X"][c, :] = Xsp[rf][qoi_ind,2:7]
-        if "heat_dep" in out_qoi:
-            qoi_val_r[group]["heat_dep"][c, :] = plasmaPower[rf] * 1e-3
+                axi_loc = axi_range[0] + (st/(N_axi - 1))*(axi_range[1]-axi_range[0])
+                if qoi == "axial_p":
+                    qoi_val_r[group]["axial_p"][c, :, st] = np.interp(axi_loc, solver.grid.xg, hist[rf][:,0])
+                    # qoi_val_r[group]["axial_p"][c, :, st] = hist[rf][:,0]
+                if qoi == "axial_d":
+                    qoi_val_r[group]["axial_d"][c, :, st] = [np.interp(axi_loc, solver.grid.xg, rho[rf][:]), 
+                                                             np.interp(axi_loc, solver.grid.xg, hist[rf][:,-1]*1e5)]
+                if qoi == "axial_v":
+                    qoi_val_r[group]["axial_v"][c, :, st] = np.interp(axi_loc, solver.grid.xg, vel[rf][:,-1])
+                if qoi == "axial_T":
+                    qoi_val_r[group]["axial_T"][c, :, st] = [np.interp(axi_loc, solver.grid.xg, Th[rf][:]), 
+                                                            np.interp(axi_loc, solver.grid.xg, Te[rf][:])]
+                if qoi == "axial_X":
+                    qoi_val_r[group]["axial_X"][c, :, st] = [np.interp(axi_loc, solver.grid.xg, Xsp[rf][:,2]),
+                                                            np.interp(axi_loc, solver.grid.xg, Xsp[rf][:,3]),
+                                                            np.interp(axi_loc, solver.grid.xg, Xsp[rf][:,4]),
+                                                            np.interp(axi_loc, solver.grid.xg, Xsp[rf][:,5]),
+                                                            np.interp(axi_loc, solver.grid.xg, Xsp[rf][:,6])]
+                if qoi == "axial_ne_LOS":
+                    qoi_val_r[group]["axial_ne_LOS"][c, :, st] = np.interp(axi_loc, solver.grid.xg, Xsp[rf][:,1])*np.interp(axi_loc, solver.grid.xg, rho[rf][:])/eMass
+                    # breakpoint()
 
         # if hist[rf][-1,0] == 0.:
         #     breakpoint()
@@ -493,10 +581,10 @@ for group in groups:
                 return
 
             # NOTE: looking at last timestep for now
-            testF(rf)
-            # breakpoint()
-            print("Maximum Electron Temperature")
-            print(np.amax(Te[rf]))
+            # testF(rf)
+            # # breakpoint()
+            # print("Maximum Electron Temperature")
+            # print(np.amax(Te[rf]))
             # testT = np.linspace(300, 11000, 500)
             # testT = Th[0]
             # ne = necSrc.nec.var(testT)
@@ -616,7 +704,7 @@ for group in groups:
 
 
     for qoi in out_qoi:
-        qoi_val[group][qoi] = np.zeros([N[group], qoi_sizes[qoi]])
+        qoi_val[group][qoi] = np.zeros([N[group], qoi_sizes[qoi][0], qoi_sizes[qoi][1]])
         # breakpoint()
         comm.Gatherv(qoi_val_r[group][qoi], [qoi_val[group][qoi], mpi_sizes[group][qoi], mpi_offsets[group][qoi], MPI.DOUBLE],  root=0)
         # comm.Gatherv(qoi_val_r[group][qoi], [qoi_val[group][qoi], mpi_sizes[group], mpi_offsets],  root=0)

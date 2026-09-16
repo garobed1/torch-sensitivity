@@ -79,23 +79,59 @@ home = os.getenv('HOME')
 # single_case = True
 # out_qoi = ['exit_mdot', 'inlet_mdot']
 
-# current samples
-sample_out_dirs = [home + "/bedonian1/sample_tps2d_base/"]
+# generic
 template_file = f"{home}/bedonian1/mean_tps2d_newmesh/tps2d_zetaf_current_TEMPLATE/lomach.sample.torch.7sp_hinlet.ini" # keep this to deal with restarts
-infile_name = "/tps_axi2d_input.ini"
-# res_dir = home + "/bedonian1/sample_tps2d_base_post/"
-res_dir = home + "/bedonian1/sample_tps2d_base_post_ELEC/"
-single_case = False
+
+# current samples
+# infile_name = "/tps_axi2d_input.ini"
+# sample_out_dirs = [home + "/bedonian1/sample_tps2d_base/"]
+# res_dir = home + "/bedonian1/sample_tps2d_base_post_ELEC/"
+# res_dir = home + "/bedonian1/sample_tps2d_base_post_ELEC_2/"
+# res_dir = home + "/bedonian1/sample_tps2d_base_post_ELEC_3/"
+# res_dir = home + "/bedonian1/sample_tps2d_base_post_MAXELEC/"
+# res_dir = home + "/bedonian1/sample_tps2d_base_post_MAXELEC_2/"
+# res_dir = home + "/bedonian1/sample_tps2d_base_post_MAXELEC_3/"
+# single_case = False
 # out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'exit_E', 'exit_mdot', 'inlet_mdot']
 # out_qoi = ['axial_v', 'axial_X', 'axial_d', 'axial_T', 'axial_E']
-out_qoi = ['axial_ne_LOS', 'axial_v', 'axial_X', 'axial_d', 'axial_T', 'axial_E']
-failed_cases = ('000384', '000349', '000393', '000449', '000197', '000129', '000029', '000030', '000409')
-
+# failed_cases = ('000384', '000349', '000393', '000449', '000197', '000129', '000029', '000030', '000409')
 # N = 48
 # N = 96
 # N = 491
-N = 224
-cases = np.array_split(np.arange(N), size)
+# N = 52
+# N = 224
+# cases = np.array_split(np.arange(N), size)
+# cases = np.array_split(np.arange(N,2*N), size)
+# cases = np.array_split(np.arange(2*N,500), size)
+# cases = np.array_split(np.arange(448,500), size)
+
+# process nominal case
+infile_name = "/lomach.torch.hot.7sp_hinlet.zf.ini"
+sample_out_dirs = [home + "/bedonian1/mean_tps2d_newmesh/tps2d_zetaf_current_hotrun/"]
+res_dir = home + "/bedonian1/sample_tps2d_base_post_MIXELEC_NOM/"
+single_case = True
+cases = [np.array([0])]
+N = 1
+failed_cases = ()
+
+# qoi
+out_qoi = ['axial_ne_LOS', 'axial_v', 'axial_X', 'axial_d', 'axial_T', 'axial_E']
+preprocessed_qoi = ['axial_ne_LOS']
+
+### Command Line Override
+if len(sys.argv) > 1:
+    # sample_out_dir = sys.argv[1]
+    res_dir = sys.argv[1]
+
+if len(sys.argv) > 2:
+    y = int(sys.argv[2])
+    cases = np.array_split(np.arange(y*N, (y+1)*N), size)
+# NOTE: USING THE INDEX FOR THE CORE INSTEAD
+# if len(sys.argv) > 4:
+#     qoi_ind = int(sys.argv[4])
+
+# breakpoint()
+
 N_axi = 150
 
 # xdiff = 0.0145
@@ -152,7 +188,8 @@ qoi_sizes = {
     'axial_T': [2, N_axi],
     'axial_X': [5, N_axi],
     'axial_E': [1, N_axi],
-    'axial_ne_LOS': [2, N_axi]
+    'axial_ne_LOS': [1, N_axi]
+    # 'axial_ne_LOS': [2, N_axi]
 }
 
 # t1d_2_tps_names = {
@@ -185,13 +222,6 @@ else:
 # out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'heat_dep']
 # out_qoi = ['exit_p', 'exit_d', 'exit_v', 'exit_T', 'exit_X', 'exit_E']
 # out_qoi = ['exit_E']
-
-### Command Line Override
-if len(sys.argv) > 2:
-    res_dir = sys.argv[1]
-    sample_out_dirs = list(sys.argv[2:])
-# if len(sys.argv) > 3:
-#     fstep = int(sys.argv[3])
 
 ### Plot Options (Not Implemented)
 make_plots = False
@@ -321,7 +351,8 @@ if 1:
                 qoi_data_r[qoi] = []
 
                 for st in range(qoi_sizes[qoi][1]):
-
+                # for st in range(75, qoi_sizes[qoi][1]):
+                    print(f"        station: {st}/{qoi_sizes[qoi][1]}")
                     if qoi.startswith("exit_") or qoi.startswith("inlet_"):
                         soldata = sold['Block-00']
 
@@ -339,12 +370,14 @@ if 1:
                         rad = rad_get(ax_loc)
 
                     if qoi == "axial_ne_LOS": # compute electron density accounting for LOS effects from measurement
-                        losLine, neMax = getLOSeffect(soldata['Yn_E'][order], 
+                        # losLine, neMax = getLOSeffect(soldata['Yn_E'][order], 
+                        # _, n_e_meas = getLOSeffect(soldata['Yn_E'][order], 
+                        n_e_meas, _ = getLOSeffect(soldata['Yn_E'][order], 
                                                     soldata['temperature'][order], 
                                                     soldata['density'][order], 
                                                     soldata.points[order,0])
-                        qoi_data_r[qoi].append([losLine, neMax])      
-
+                        qoi_data_r[qoi].append([n_e_meas])      
+                        # breakpoint()
                     if qoi == "exit_T" or qoi == "axial_T": # same temp for both Ar and E
                         qoi_data_r[qoi].append([soldata['temperature'], soldata['temperature']])
                     if qoi == "exit_p" or qoi == "axial_p":

@@ -39,7 +39,8 @@ nom_dir = home + "/bedonian1/mean_torch1d_old/mean_r6_fine/"
 # res_dir = home + "/bedonian1/rate_resample_model_4s_r8/"
 # res_dir = home + "/bedonian1/rate_resample_plots/"
 # res_dir = home + "/bedonian1/rate_resample_GPR_plots/"
-res_dir = home + "/bedonian1/rate_resample_GPR_dummy/"
+# res_dir = home + "/bedonian1/rate_resample_GPR_dummy/"
+res_dir = home + "/bedonian1/rate_resample_GPR_dummy_2/"
 # mean_dir = home + "/bedonian1/mean_4s_r6/"
 
 ### Account for Crashed Runs
@@ -69,8 +70,8 @@ reaction_types_full = ['Excitation', 'Deexcitation', 'Ionization', 'Recombinatio
 make_plots = True
 # number of samples to plot
 # Ndraw = 500
-# Ndraw = 200
-Ndraw = 100
+Ndraw = 200
+# Ndraw = 100
 clim = 20000
 plt.rcParams.update({
     "text.usetex": True,
@@ -352,7 +353,7 @@ label_dict = {'meta':'meta',
 ### NOTE: excising bad outliers in higher
 h_inc = []
 for i in range(full_rate['Excitation']['higher'].shape[1]):
-    if full_rate['Excitation']['higher'][:,i][-1] < 1e12 and full_rate['Excitation']['fourp'][:,i][-1] < 1e10:
+    if full_rate['Excitation']['higher'][:,i][-1] < 1e12 and full_rate['Excitation']['fourp'][:,i][-1] < 1e10 and full_rate['Excitation']['res'][:,i][-1] < 1e11:
         h_inc.append(i)
     else:
         print(str(full_rate['Excitation']['higher'][:,i][-1]) + " " + str(full_rate['Excitation']['fourp'][:,i][-1]))
@@ -370,8 +371,8 @@ if make_plots:
         for ptype in ['Excitation', 'Deexcitation']:
             # breakpoint()
             # for rname in full_rate[ptype].keys():
-            # for rname in ['higher', 'meta', 'res', 'fourp']:
-            for rname in ['higher', 'meta']:
+            for rname in ['higher', 'res', 'fourp', 'meta']:
+            # for rname in ['higher', 'meta']:
                 
                 # if ptype == 'Ionization' and rname == 'meta':
                 #     breakpoint()

@@ -16,9 +16,8 @@ rank = comm.Get_rank()
 size = comm.Get_size()
 
 """
-Equivalent to sample_cross_sections.py in torch-chemistry, except we get forward rates
-by resampling KL models, then compute backward rates
-
+Equivalent to resample_rates.py, except for modifying tke+3d.csv, the file specififying 
+v2f inlet boundary conditions, varying the turbulent intensity
 
 
 """
@@ -27,105 +26,26 @@ by resampling KL models, then compute backward rates
 home = os.getenv('HOME')
 
 ### KL Model Directory
-# kl_model_dir = 'results/rate_resample_r7/'
-# kl_model_dir = home + "/bedonian1/rate_resample_model_r8/"
-# kl_model_dir = home + "/bedonian1/rate_resample_model_4s_r8/"
-kl_model_dir = home + "/bedonian1/rate_resample_GPR_plots/"
+kl_model_dir = home + "/bedonian1/turb_resample/"
 
 ### Nominal Rate Directory
-# nom_dir = home + "/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/"
-# nom_dir = home + "/mean_4s_r6/"
-# nom_dir = home + "/mean_r6/"
-nom_dir = home + "/bedonian1/mean_torch1d_old/mean_r6_fine/"
+nom_dir = home + "/bedonian1/mean_tps2d_newmesh/tps2d_zetaf_current_TEMPLATE/inputs/tke_3d.csv"
 
 ### Rate Sample Result Directory
-# res_dir = home + "/bedonian1/torch1d_resample_sens_r7/"
-# res_dir = home + "/bedonian1/rate_mf_r1_pilot/"
-# res_dir = home + "/bedonian1/rate_mf_r1_pilot_4s/"
-# res_dir = home + "/bedonian1/rate_mf_r1_G1/"
-# res_dir = home + "/bedonian1/rate_mf_r1_G2/"
-# res_dir = home + "/bedonian1/rate_mf_r1_G3/"
-# res_dir = home + "/bedonian1/rate_mf_r1_G4/"
-# res_dir = home + "/bedonian1/new_rate_samples/rate_mf_base/"
-res_dir = home + "/bedonian1/new_rate_samples/rate_mf_dummy/"
+res_dir = home + "/bedonian1/new_turb_samples/rate_mf_base/"
 
-### Lump to Four Species
-four_species = False
-# four_species = True
 
 ### SAMPLING INPUTS
-# Generate some artificial distributions for every considered cross section
 # Nsamples = 50000
 # Nsamples = 20000
-# Nsamples = 100
+Nsamples = 1000
 # Nsamples = 12
-Nsamples = 1024 # for Sobol sensitivity
-# Nsamples = 256 # tentative covariance estimation sample 
-# Nsamples = 4
+# Nsamples = 1024 # for Sobol sensitivity
 
-### Number of Temperature Points
-N_T = 512
+make_plots = False
 
-### Threshold for inclusion of terms in KL expansion
-# pc_threshold = 1.0 - 1.e-2 #coarse, 99%
-pc_threshold = 1.0 - 1.e-3 # 99.9%
-# pc_threshold = 1.0 - 1.e-4  99.99%
-
-### if muKL, 0 means both processes, 1 onward places threshold on that process' spectrum
-pc_proc = 0 
-
-
-# sample_exc = True
-# sample_ion = True
-# sample_step_exc = False
-
-make_plots = True
-
-col_dict = {'meta':'r',
-            'res':'b',
-            'fourp':'g',
-            'higher':'y',
-            'Lumped':'r'
-}
-
-Ndraw = 100
-clim = 20000
-plt.rcParams.update({
-    "text.usetex": True,
-    # "font.family": "serif",
-    # "font.serif": ["Palatino"],
-    "font.size": 16,
-})
-
-
-# compute_sobol = False
-compute_sobol = False
-
-if four_species:
-    reaction_types_fwd = ['Excitation', 'Ionization']
-    lumped_rates = ["Lumped"]
-    lumped_rates_g = ["Lumped", "Ground"]
-    reaction_types_bwd = ['Excitation', 'Deexcitation', 'Ionization', 'Recombination']
-else:
-    reaction_types_fwd = ['Excitation', 'Ionization', 'StepExcitation']
-    lumped_rates = ["meta", "res", "fourp", "higher"]
-    lumped_rates_g = ["meta", "res", "fourp", "higher", "Ground"]
-    lumped_rates_fwd_step = ["meta_res", "meta_fourp", "meta_higher", 
-                            "res_fourp", "res_higher", "fourp_higher"]
-    lumped_rates_bwd_step = ["res_meta", "fourp_meta", "higher_meta", 
-                            "fourp_res", "higher_res", "higher_fourp"]
-    reaction_types_bwd = ['Excitation', 'Deexcitation', 'Ionization', 'Recombination']
-
-
-sfwd_to_bkw = {
-    "meta_res": "res_meta", 
-    "meta_fourp": "fourp_meta",
-    "meta_higher": "higher_meta",
-    "res_fourp": "fourp_res",
-    "res_higher": "higher_res",
-    "fourp_higher": "higher_fourp"
-}
-
+# log uniform perturbation to relative intensity
+dist_param = [-1.0, 1.0] # 10^X
 
 #### END INPUTS ####
 
@@ -183,85 +103,61 @@ T_Maxw = np.linspace(0.02, 2, N_T) * eV
 
 
 
-if make_plots:
+# if make_plots:
 
-    upto = -1
-    doto = 0
-    # doto = 300
-    # upto = 50
+#     upto = -1
+#     doto = 0
+#     # doto = 300
+#     # upto = 50
+#     for s_data in sample_labels:
 
-    # for ptype in ['Excitation']:
-    #     # N_lam = 50
-    #     # N_lam = 15
-    #     N_lam = 8
-    #     for rname in ['higher', 'meta']:
-    #         plt.scatter(list(range(1,N_lam+1)), eigval[ptype][rname][:N_lam]/np.sum(eigval[ptype][rname]), color=col_dict[rname], label=rname)
-    #     plt.ylabel(rf"Rate Correlation Scaled Eigenvalues")
-    #     plt.ylim(bottom=0., top=1.0)
-    #     plt.xticks(list(range(1,N_lam+1)))
-    #     plt.grid()
-    #     plt.legend()
-    #     plt.savefig(res_dir + f"plots/argon-{ptype}-eigvals.png", bbox_inches='tight', dpi=400)
-    #     plt.clf()
+#         for ptype in reaction_types_full:
+#         # for ptype in ['Excitation']:
+#             for rname in full_rate[ptype].keys():
+                
+#                 # if ptype == 'Ionization' and rname == 'meta':
+#                 #     breakpoint()
+#                 # ptype = "Excitation"
+#                 # prate = "meta"
+#                 fac = 0
+#                 if (ptype == "Excitation" or ptype == "Deexcitation") and rname == "higher":
+#                     fac = c[s_data] - len(h_inc)
+
+#                 Nind = np.random.choice(c[s_data]-fac, Ndraw,  replace=False)
+#                 # breakpoint()
+#                 if ptype == "Excitation" and rname == "higher":
+#                     y_T = full_rate[ptype][rname][:,h_inc][:,Nind][doto:upto,:]
+#                     y_B = full_rate[ptype][rname][:,h_inc][:,crashed_runs][doto:upto,:]
+#                     y_N = nom_rate[ptype][rname][:,0][doto:upto]
+#                 else:
+#                     y_T = full_rate[ptype][rname][:,Nind][doto:upto,:]
+#                     y_B = full_rate[ptype][rname][:,crashed_runs][doto:upto,:]
+#                     y_N = nom_rate[ptype][rname][:,0][doto:upto]
+#                 # y_E = []
+#                 # for i in up_to:
+#                 #     y_E.append(mean[ptype][prate] + np.dot(scores[ptype][prate][:i, s], eigvec[ptype][prate][:,:i].T))
+#                 # y_M = mean[ptype][prate]
+
+#                 plt.plot([], [], label = "Samples",  color='r', alpha = 0.5)
+#                 plt.plot(T_Maxw[doto:upto], y_T, color='r', alpha = 0.5)
+#                 # plt.plot([], [], label = f"Lumped {label_dict[rname]}",  color=col_dict[rname], alpha = 1.0)
+#                 # plt.plot(T_Maxw[doto:upto], y_T, color=col_dict[rname], alpha = 0.1)
+#                 # plt.plot([], [], label = "Crashed",  color='b', alpha = 1.0)
+#                 # plt.plot(T_Maxw[doto:upto], y_B, color='b', alpha = 1.0)
+#                 plt.plot(T_Maxw[doto:upto], y_N, label="Nominal")
+#                 # for i in range(len(up_to)):
+#                 #     plt.plot(T_Maxw, y_E[i], label=f"Sample {s} (KL {up_to[i]})")
+
+#                 plt.xlabel(rf"$T$ [K]")
+#                 plt.ylabel(rf"$k_f$ [m$^3$ / mol / s]")
+#                 plt.yscale('log')
+#                 if ptype == "Excitation":
+#                     plt.ylim(bottom=1e-20)
+#                 plt.grid()
+#                 plt.legend()
+#                 plt.savefig(res_dir + f"plots/argon-{ptype}-{rname}-samples.pdf", bbox_inches='tight')
+#                 plt.clf()
     # quit()
-
-    # for ptype in reaction_types_full:
-    # for ptype in ['Excitation', 'Deexcitation']:
-    for ptype in ['Excitation']:
-        # breakpoint()
-        # for rname in full_rate[ptype].keys():
-        for rname in ['higher', 'meta', 'res', 'fourp']:
-        # for rname in ['higher', 'meta']:
-
-
-            y_T = []
-            for i in range(Ndraw):
-                krate = mean[ptype][rname] + np.dot(np.random.normal(size=N_pc[ptype][rname][2])*np.sqrt(eigval[ptype][rname][:N_pc[ptype][rname][2]]),
-                                                    eigvec[ptype][rname][:,:N_pc[ptype][rname][2]].T)
-                if ptype == "Excitation":
-                    y_T.append(np.exp(krate[:N_T]))
-                else:
-                    y_T.append(np.exp(krate[N_T:]))
-
-
-
-            plt.plot([], [], label = rname,  color=col_dict[rname], linewidth = 1.0, alpha = 0.5, )
-            plt.plot(T_Maxw, np.array(y_T).T, color=col_dict[rname], linewidth = 1.0, alpha = 0.9)
-            # plt.plot([], [], label = f"Lumped {label_dict[rname]}",  color=col_dict[rname], alpha = 1.0)
-            # plt.plot(T_Maxw[doto:upto], y_T, color=col_dict[rname], alpha = 0.1)
-            # plt.plot([], [], label = "Crashed",  color='b', alpha = 1.0)
-            # plt.plot(T_Maxw[doto:upto], y_B, color='b', alpha = 1.0)
-            # for i in range(len(up_to)):
-            #     plt.plot(T_Maxw, y_E[i], label=f"Sample {s} (KL {up_to[i]})")
-
-            ## Nominal rate
-            # plt.plot(T_Maxw[doto:upto], y_N, color='k')
-            
-            # plt.xlabel(rf"$T$ [K]")
-            # plt.ylabel(rf"$k_f$ [m$^3$ / mol / s]")
-            # plt.yscale('log')
-            # if ptype == "Excitation":
-            #     plt.ylim(bottom=1e-20)
-            # plt.grid()
-            # plt.legend()
-            # plt.savefig(res_dir + f"plots/argon-{ptype}-{rname}-samples.pdf", bbox_inches='tight')
-            # plt.clf()
-
-        # plt.plot([], [], color='k', label="Nominal")
-        plt.xlabel(rf"$T$ [K]")
-        plt.ylabel(rf"$k_f$ [m$^3$ / mol / s]")
-        plt.yscale('log')
-        if ptype == "Excitation":
-            plt.ylim(bottom=1e-20, top=1e12)
-        plt.grid()
-        plt.legend()
-        plt.savefig(res_dir + f"plots/argon-{ptype}-total-resamples.png", bbox_inches='tight', dpi=400)
-        plt.clf()
-        # breakpoint()
-
-    
-
-    quit()
 
 
 

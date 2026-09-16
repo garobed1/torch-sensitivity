@@ -3,6 +3,7 @@ import numpy as np
 from scipy.io import loadmat
 from scipy.special import erf, wofz
 from scipy.interpolate import interpn, RegularGridInterpolator    
+from scipy.optimize import root
 import os
 
 # emulation of line-of-sight (LOS) effects on electron density measurements, applied to TPS results for direct comparison
@@ -14,6 +15,7 @@ home = os.getenv("HOME")
 kB = 8.617333262e-5 # [eV/K] 
 eCharge = 1.60217663e-19 #% [Coloumbs]
 eMass = 9.1093837139e-31 # kg 
+arMass = 6.634e-26 # kg
 
 # from Kepple and Griem "Improved Stark Profile Calculations for the
 # Hydrogen Lines H α , H β , H γ , and H δ" 1968
@@ -26,7 +28,9 @@ lineCase = 'beta' # fit Balmer alpha or beta line
 gamma_inst = 0.0032 # instrument function Voigt/LT, Lorentz parameter
 sigma_inst = 0.0082 # instrument function Voigt, Gauss parameter
 dw_inst = [gamma_inst, sigma_inst] 
+# dw_inst_est = 0.5346*2*gamma_inst + np.sqrt(0.2166*4*gamma_inst^2 + (2*sigma_inst*np.sqrt(2*np.log(2)))^2)
 Mi = 40 # particle mass for perturber ion [g/mol], should be argon or nitrogen
+# Ar is 40, N_2 is 28 (14 per atom)
 Mh = 1 # particle mass for emitter [g/mol], should be atomic hydrogen
 mu = 1/(1/Mi + 1/Mh)
 
@@ -59,23 +63,31 @@ Ye_data : 1D array of radial field electron mass fraction data at an axial stati
 T_data : 1D array of radial field temperature data at an axial station
 rho_data : 1D array of radial field density data at an axial station
 """
-def getLOSeffect(Ye_data, T_data, rho_data, pos_data):
+def getLOSeffect(Ye_data, T_data, rho_data, pos_data, ne_data=None, ntot_data=None):
 
     
     lineShape = []
+    starkShape = []
 
     # integrate over radial positions
-    for rr in range(len(Ye_data)): # radial positions
-        YeBroad = Ye_data[rr]
-        TBroad = T_data[rr]
-        rhoBroad = rho_data[rr]
+    for rr in range(len(pos_data)): # radial positions
+        
+        if ne_data is None:
+            YeBroad = Ye_data[rr]
+            TBroad = T_data[rr]
+            rhoBroad = rho_data[rr]
 
-        n_e = rhoBroad*YeBroad/eMass
+            n_e = rhoBroad*YeBroad/eMass
+        else:
+            rhoBroad = ntot_data[rr]*arMass
+            TBroad = T_data[rr]
+            n_e = ne_data[rr]
 
+        # breakpoint()
         if lineCase == 'beta':
             
             dw_DopplerFit = dopplerBroad(lineCent,TBroad,Mi) # [nm]
-            fitSpec = convLineShapeBeta(wvlNew,dw_inst,dw_DopplerFit,mu,TBroad,n_e)
+            fitSpec, starkSpec = convLineShapeBeta(wvlNew,dw_inst,dw_DopplerFit,mu,TBroad,n_e)
         
             Qbalmer = 32*np.exp(-eupper/(kB*TBroad))
             
@@ -85,38 +97,56 @@ def getLOSeffect(Ye_data, T_data, rho_data, pos_data):
         
         # compute EQL population of relevant H-atom levels
         Qelec = 2 + 8 * np.exp(-13.6*(1 - 1/4)/(kB*TBroad)) + 18 * np.exp(-13.6*(1 - 1/9)/(kB*TBroad))
-        nj = rhoBroad*Qbalmer/Qelec * 0.02 # [1/m^3], 1% of H2, ~2% of H
+
+        if ne_data is None:
+            nj = (rhoBroad/arMass)*Qbalmer/Qelec * 0.02 # [1/m^3], 1% of H2, ~2% of H
+        else:
+            nj = ntot_data[rr]*Qbalmer/Qelec * 0.02 # [1/m^3], 1% of H2, ~2% of H
+
+        # NOTE: may be erroneous
+        # nj = rhoBroad*Qbalmer/Qelec * 0.02 # [1/m^3], 1% of H2, ~2% of H
         
         # compute line strength of transition (assume it is optically thin)
         emissCoeff = nj * A_ji * eij * (eCharge*1e-9) # [W/s.m^3.ster.nm]
         
         # scale line strength
         lineShape.append(fitSpec.T*emissCoeff)
-
-
+        # breakpoint()
+        starkShape.append(starkSpec)
 
     lineShape = np.array(lineShape)
+    starkShape = np.array(starkShape)
     lineShape[np.isnan(lineShape)] = 0
+    starkShape[np.isnan(starkShape)] = 0
 
     dr = [pos_data[n+1] - pos_data[n] for n in range(len(pos_data)-1)]
     dr.append(pos_data[-1] - pos_data[-2])
     # losLine = 2*np.sum(lineShape*dr, axis = 0)
-    losLine = 2*np.einsum('ij,i->j', lineShape, dr)
+    # losLine = 2*np.einsum('ij,i->j', lineShape, dr)
+    losLine = 2*np.einsum('ij,i->j', starkShape, dr)
     losLine = losLine/max(losLine)
     losLine[np.isnan(losLine)] = 0
     
-    neMaxIdx = np.argmax(n_e)
-    neMaxProfile = lineShape[neMaxIdx,:]/max(lineShape[neMaxIdx,:])
+    if ne_data is None:
+        neMaxIdx = np.argmax(rho_data*Ye_data)
+    else:
+        neMaxIdx = np.argmax(ne_data)
+    # neMaxProfile = lineShape[neMaxIdx,:]/max(lineShape[neMaxIdx,:])
+    neMaxProfile = starkShape[neMaxIdx,:]/max(starkShape[neMaxIdx,:])
     # neMaxProfile = lineShape[neMaxIdx,:]
     neMaxProfile[np.isnan(neMaxProfile)] = 0
 
     residual = neMaxProfile-losLine
     
-    breakpoint()
     # Build output array
-    Aout = [losLine, neMaxProfile]
+    Aout = [wvlNew, losLine, neMaxProfile]
 
-    return Aout
+    # return Aout
+
+    n_e_meas, n_e_max_meas = ProcessStark(Aout)
+
+    # breakpoint()
+    return n_e_meas, n_e_max_meas
 
 ## helper functions
 
@@ -168,7 +198,7 @@ def convLineShapeBeta(wl,dw_inst,dw_doppler,mu,Te,ne):
         #convProfile = conv(instProfile,dopplerProfile,'same');
         convProfile = np.zeros(len(wl))
 
-        return convProfile
+        return convProfile, convProfile
     else:
         # F0 = 2*pi*(4/15)^(2/3)*1.602e-19/(4*pi*8.854e-12)*(ne/1e6)^(2/3);
         F0 = 1.25e-9*(ne/1e6)**(2/3); # Holtsmark normal field, needs n_e in cm^-3 and is used in normalization of relative wavelength in Angstrom, Vidal et al. "HYDROGEN STARK-BROADENING TABLES" 1973
@@ -193,4 +223,151 @@ def convLineShapeBeta(wl,dw_inst,dw_doppler,mu,Te,ne):
         convProfile = np.fft.ifft(convolution).real
         # breakpoint()
       
-    return convProfile/max(convProfile)
+    return convProfile/max(convProfile), starkProfile
+
+
+def areaFind(x,frac,wl,spec): # function to minimize to find full width at half area
+    wlNew = np.linspace(wl[0],x,10000)
+    specNew = np.interp(wlNew, wl, spec)
+    res = np.trapz(specNew, x=wlNew, axis=0) - frac
+    return res
+
+def ProcessStark(A):
+
+    # can skip many of the steps that the actual data process takes
+    wvl = A[0]
+    losLine = A[1]
+    maxLine = A[2]
+
+    # shift lines to taper at 0.
+    losLine = losLine - min(losLine)
+    losLine = losLine/max(losLine)
+    maxLine = maxLine - min(maxLine)
+    maxLine = maxLine/max(maxLine)
+
+    # breakpoint()
+
+    # compute FWHM
+    losHalfIdx = np.argmin(abs(losLine - 0.5))
+    losFWHM = 2*abs(wvl[losHalfIdx])
+    maxHalfIdx = np.argmin(abs(maxLine - 0.5))
+    maxFWHM = 2*abs(wvl[maxHalfIdx])
+
+    # Compute electron number density from FWHA
+    if lineCase == 'beta':
+        # if strcmp(neCase,'approx')
+        # starkProfileBeta = LorentzFit(wvl,losFWHM)
+        # # starkProfileBeta = LorentzFit(wvl,dw_StarkFit(idxCnt))
+        # totArea = np.trapz(starkProfileBeta, x=wvlNew); 
+        # qArea = 0.25*totArea
+        # areaFun_25 = lambda x : areaFind(x,qArea,wvlNew,starkProfileBeta)
+        # wvl_25 = root(areaFun_25,-2.5).x
+        # FWHA = 2*abs(wvl_25)
+        # n_e = 1e23*(FWHA/1.666)**(1./0.68777) # Gigosos et al. "Computer simulated Balmer-alpha, -beta and -gamma Stark line profiles for non-equilibrium plasmas diagnostics" 2003
+        # # rho_fit(idxCnt) = nan
+
+        # starkProfileBetaMax = LorentzFit(wvl,maxFWHM)
+        # # starkProfileBeta = LorentzFit(wvl,dw_StarkFit(idxCnt))
+        # totAreaMax = np.trapz(starkProfileBetaMax, x=wvlNew); 
+        # qAreaMax = 0.25*totAreaMax
+        # areaFun_25_Max = lambda x : areaFind(x,qAreaMax,wvlNew,starkProfileBetaMax)
+        # wvl_25_Max = root(areaFun_25_Max,-2.5).x
+        # maxFWHA = 2*abs(wvl_25_Max)
+        # n_e_max = 1e23*(maxFWHA/1.666)**(1./0.68777) # Gigosos et al. "Computer simulated Balmer-alpha, -beta and -gamma Stark line profiles for non-equilibrium plasmas diagnostics" 2003
+
+        n_e = 1e23*(losFWHM/4.8)**(1./0.68116) # Gigosos et al. "Computer simulated Balmer-alpha, -beta and -gamma Stark line profiles for non-equilibrium plasmas diagnostics" 2003
+        n_e_max = 1e23*(maxFWHM/4.8)**(1./0.68116) # Gigosos et al. "Computer simulated Balmer-alpha, -beta and -gamma Stark line profiles for non-equilibrium plasmas diagnostics" 2003
+
+
+        # breakpoint()
+    # breakpoint()
+
+
+    return n_e, n_e_max
+    # return n_e
+
+
+
+
+# def resFunBeta(x,wl,data,dw_inst,lambda0,Me,mu,Te,wlNew,weightLim): # function to minimize for spectral fitting
+#     # x[0] - Stark broadening FWHM
+#     # x[1] - Ti for Doppler broadening
+#     # x[2] - baseline shift
+#     # data - data to fit to
+#     # dw_inst - instrument function parameters
+#     # lambda0 - center wavelength
+#     # Mi - emitter molecular mass
+#     # wl - data wavelength grid
+#     # wlNew - finer wavelength grid
+
+#     dw_Doppler = dopplerBroad(lambda0,x[1],Me) # Doppler broadening
+#     muMod = mu*Te/x[1] # modified reduced mass due to ion dynamics (ion velocity proportionality), Zikic et al. "A program for the evaluation of electron number density from experimental hydrogen balmer beta line profiles" 2002
+
+#     theory = convLineShapeBeta(wlNew,dw_inst,dw_Doppler,muMod,Te,x[0]) # compute theoretical lineshape
+    
+#     # compute residual
+#     theoryInterp = np.interp(wlNew,theory,wl) + x(3)
+#     theoryInterp = theoryInterp/max(theoryInterp)
+#     res = data - theoryInterp
+    
+#     # add weights to residual
+#     weights = ones(size(res))
+#     maxDiff = 1 - min(data)
+#     weightLimMod = weightLim*maxDiff + min(data)
+#     weights(data < weightLimMod) = 0.5
+#     res = res*sqrt(weights)
+
+#     return res
+
+
+if __name__ == "__main__":
+    import csv
+    import matplotlib.pyplot as plt
+
+    TeFile = home + '/starkBroadExp-main/SimResults/2024-08-02/T.csv'
+    neFile = home + '/starkBroadExp-main/SimResults/2024-08-02/n_e.csv'
+    ntotFile = home + '/starkBroadExp-main/SimResults/2024-08-02/n_tot.csv'
+
+    start = 3
+
+    with open(TeFile, 'r') as f:
+        Tdata = list(csv.reader(f))
+        xT = np.array([float(x) for x in Tdata[0][1:]])
+        rT = np.array([float(x) for x in [Tdata[y][0] for y in range(1,len(Tdata))]])
+        dT = np.array(Tdata[1:][:], dtype=float)
+        dT = dT[:,1:]
+
+    with open(neFile, 'r') as f:
+        nedata = list(csv.reader(f))
+
+        xne = np.array([float(x) for x in nedata[0][1:]])
+        rne = np.array([float(x) for x in [nedata[y][0] for y in range(1,len(nedata))]])
+        dne = np.array(nedata[1:][:], dtype=float)
+        dne = dne[:,1:]
+
+    with open(ntotFile, 'r') as f:
+        ntotdata = list(csv.reader(f))
+
+        xntot = np.array([float(x) for x in ntotdata[0][1:]])
+        rntot = np.array([float(x) for x in [ntotdata[y][0] for y in range(1,len(ntotdata))]])
+        dntot = np.array(ntotdata[1:][:], dtype=float)
+        dntot = dntot[:,1:]
+
+    neLOS = np.zeros(xT.shape[0])
+    neMAX = np.zeros(xT.shape[0])
+
+    for i in range(start, len(xT)):
+        print(i)
+        neLOS[i], neMAX[i] = getLOSeffect(None, dT[:,i], None, rT, ne_data = dne[:,i], ntot_data = dntot[:,i])
+
+
+    LTE_dat = np.vstack([xT, neLOS, neMAX]).T
+    with open(home + "/torch-multifidelity/LTE_dat.npy", 'wb') as f:
+        np.save(f, LTE_dat)
+
+
+    # plt.plot(xT, neLOS, 'b')
+    # plt.plot(xT, neMAX, 'r')
+    # plt.savefig("showdatvalid_fix2.png", bbox_inches='tight')
+
+    # breakpoint()
