@@ -30,7 +30,8 @@ home = os.getenv('HOME')
 # kl_model_dir = 'results/rate_resample_r7/'
 # kl_model_dir = home + "/bedonian1/rate_resample_model_r8/"
 # kl_model_dir = home + "/bedonian1/rate_resample_model_4s_r8/"
-kl_model_dir = home + "/bedonian1/rate_resample_GPR_plots/"
+# kl_model_dir = home + "/bedonian1/rate_resample_GPR_plots/"
+kl_model_dir = home + "/bedonian1/rate_resample_GPR_dummy_2/"
 
 ### Nominal Rate Directory
 # nom_dir = home + "/torch-sensitivity/trevilo-cases/torch_7sp_chem/nominal/rate-coefficients/"
@@ -47,7 +48,8 @@ nom_dir = home + "/bedonian1/mean_torch1d_old/mean_r6_fine/"
 # res_dir = home + "/bedonian1/rate_mf_r1_G3/"
 # res_dir = home + "/bedonian1/rate_mf_r1_G4/"
 # res_dir = home + "/bedonian1/new_rate_samples/rate_mf_base/"
-res_dir = home + "/bedonian1/new_rate_samples/rate_mf_dummy/"
+# res_dir = home + "/bedonian1/new_rate_samples/rate_mf_dummy/"
+res_dir = home + "/bedonian1/new_rate_samples/rate_mf_dummy_2/"
 
 ### Lump to Four Species
 four_species = False

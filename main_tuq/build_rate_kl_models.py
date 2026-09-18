@@ -356,7 +356,7 @@ for i in range(full_rate['Excitation']['higher'].shape[1]):
     if full_rate['Excitation']['higher'][:,i][-1] < 1e12 and full_rate['Excitation']['fourp'][:,i][-1] < 1e10 and full_rate['Excitation']['res'][:,i][-1] < 1e11:
         h_inc.append(i)
     else:
-        print(str(full_rate['Excitation']['higher'][:,i][-1]) + " " + str(full_rate['Excitation']['fourp'][:,i][-1]))
+        print(str(full_rate['Excitation']['higher'][:,i][-1]) + " " + str(full_rate['Excitation']['fourp'][:,i][-1]) + " " + str(full_rate['Excitation']['res'][:,i][-1]))
 # breakpoint()
 
 if make_plots:
@@ -379,12 +379,12 @@ if make_plots:
                 # ptype = "Excitation"
                 # prate = "meta"
                 fac = 0
-                if (ptype == "Excitation" or ptype == "Deexcitation") and (rname == "higher" or rname == "fourp"):
+                if (ptype == "Excitation" or ptype == "Deexcitation") and (rname == "higher" or rname == "fourp" or rname == "res"):
                     fac = c[s_data] - len(h_inc)
 
                 Nind = np.random.choice(c[s_data]-fac, Ndraw,  replace=False)
                 # breakpoint()
-                if (ptype == "Excitation" or ptype == "Deexcitation") and (rname == "higher" or rname == "fourp"):
+                if (ptype == "Excitation" or ptype == "Deexcitation") and (rname == "higher" or rname == "fourp" or rname == "res"):
                     y_T = full_rate[ptype][rname][:,h_inc][:,Nind][doto:upto,:]
                     y_B = full_rate[ptype][rname][:,h_inc][:,crashed_runs][doto:upto,:]
                     y_N = nom_rate[ptype][rname][:,0][doto:upto]
@@ -432,7 +432,7 @@ if make_plots:
             # breakpoint()
 
 
-    quit()
+    # quit()
 
 # now compute PCA and assemble scores
 mean = {}
@@ -524,7 +524,7 @@ else:
             if log_model:
                 work = np.log(fwd_bkw)
 
-            if (rref == "Excitation" or rref == "Deexcitation") and rate == "higher":
+            if (rref == "Excitation" or rref == "Deexcitation"): # and rate == "higher"
                 print("excluded samples")
                 work = work[:,h_inc]
             mean[rref][rate], eigval[rref][rate], eigvec[rref][rate], scores[rref][rate] = estimateCovarianceEig(work)
